@@ -1,0 +1,33 @@
+services:
+  db:
+    image: mysql:8.4
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: hcmc_audioguide
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: .
+    image: ${API_IMAGE:-hcmc-audioguide:local}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: "Server=db;Port=3306;Database=hcmc_audioguide;User=root;Password=${MYSQL_ROOT_PASSWORD:-root};CharSet=utf8mb4;"
+      Jwt__Key: ${JWT_KEY:-change-me-in-production-at-least-32-characters!!}
+      Seed__AdminUsername: ${ADMIN_USERNAME:-admin}
+      Seed__AdminPassword: ${ADMIN_PASSWORD:-Admin@123}
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql_data:

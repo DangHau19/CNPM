@@ -1,0 +1,33 @@
+namespace AudioGuide.BLL;
+
+// ---------- Public (người dùng) ----------
+public record LanguageDto(string Code, string Name, string NativeName, string SpeechLocale, bool IsActive, int SortOrder);
+
+/// <summary>Địa điểm đã được chọn bản dịch phù hợp. LanguageCode là ngôn ngữ THỰC TẾ của nội dung (có thể khác ngôn ngữ yêu cầu nếu fallback).</summary>
+public record PlaceDto(
+    int Id, string Slug, double Latitude, double Longitude, int RadiusMeters,
+    string? ImageUrl, string Address,
+    string Name, string NarrationText, string? AudioUrl,
+    string LanguageCode, string SpeechLocale, bool FellBack, double? DistanceMeters);
+
+public record PlayLogRequest(int PlaceId, string LanguageCode, string TriggerType);
+
+// ---------- Admin ----------
+public record LoginRequest(string Username, string Password);
+public record AdminProfile(int Id, string Username, string DisplayName);
+
+public record TranslationDto(string LanguageCode, string Name, string NarrationText, string? AudioUrl);
+public record TranslationSaveRequest(string Name, string NarrationText, string? AudioUrl);
+
+public record PlaceAdminDto(
+    int Id, string Slug, double Latitude, double Longitude, int RadiusMeters,
+    string? ImageUrl, string Address, bool IsActive, List<TranslationDto> Translations);
+
+public record PlaceSaveRequest(
+    string Slug, double Latitude, double Longitude, int RadiusMeters,
+    string? ImageUrl, string Address, bool IsActive);
+
+public record LanguageSaveRequest(string Code, string Name, string NativeName, string SpeechLocale, bool IsActive, int SortOrder);
+
+public record StatItem(string Key, string Label, int Count);
+public record StatsDto(int TotalPlays, int GpsPlays, int ManualPlays, List<StatItem> TopPlaces, List<StatItem> ByLanguage);

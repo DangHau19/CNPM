@@ -1,0 +1,83 @@
+{
+  "languages": [
+    { "code": "vi", "name": "Vietnamese", "nativeName": "Tiếng Việt", "speechLocale": "vi-VN", "sortOrder": 1 },
+    { "code": "en", "name": "English",    "nativeName": "English",    "speechLocale": "en-US", "sortOrder": 2 },
+    { "code": "zh", "name": "Chinese",    "nativeName": "中文",        "speechLocale": "zh-CN", "sortOrder": 3 },
+    { "code": "ja", "name": "Japanese",   "nativeName": "日本語",      "speechLocale": "ja-JP", "sortOrder": 4 },
+    { "code": "ko", "name": "Korean",     "nativeName": "한국어",      "speechLocale": "ko-KR", "sortOrder": 5 }
+  ],
+  "places": [
+    {
+      "slug": "dinh-doc-lap",
+      "latitude": 10.7770, "longitude": 106.6954, "radiusMeters": 120,
+      "address": "135 Nam Kỳ Khởi Nghĩa, Quận 1",
+      "translations": {
+        "vi": { "name": "Dinh Độc Lập", "narrationText": "Chào mừng bạn đến Dinh Độc Lập, còn gọi là Dinh Thống Nhất. Công trình hiện nay do kiến trúc sư Ngô Viết Thụ thiết kế, hoàn thành năm 1966, thay thế dinh Norodom cũ của thời Pháp thuộc. Ngày 30 tháng 4 năm 1975, xe tăng húc đổ cổng dinh, đánh dấu sự kết thúc của chiến tranh Việt Nam. Bên trong còn lưu giữ phòng họp nội các, phòng khánh tiết và hầm chỉ huy." },
+        "en": { "name": "Independence Palace", "narrationText": "Welcome to the Independence Palace, also known as Reunification Palace. The current building was designed by architect Ngo Viet Thu and completed in 1966, replacing the old colonial Norodom Palace. On April 30, 1975, a tank crashed through its gates, marking the end of the Vietnam War. Inside you can still see the cabinet room, reception halls and the underground command bunker." },
+        "zh": { "name": "独立宫", "narrationText": "欢迎来到独立宫，又称统一宫。现有建筑由越南建筑师设计，于1966年竣工，取代了法属时期的诺罗敦宫。1975年4月30日，一辆坦克冲破宫门，标志着越南战争的结束。宫内至今保留着内阁会议室、接待大厅和地下指挥所。" },
+        "ja": { "name": "独立宮殿", "narrationText": "独立宮殿へようこそ。統一会堂とも呼ばれています。現在の建物はベトナム人建築家の設計で1966年に完成し、フランス植民地時代のノロドム宮殿に代わって建てられました。1975年4月30日、戦車が正門を突破し、ベトナム戦争の終結を象徴する場所となりました。館内には、閣議室や謁見の間、地下の司令室が今も残っています。" },
+        "ko": { "name": "독립궁", "narrationText": "통일궁이라고도 불리는 독립궁에 오신 것을 환영합니다. 현재 건물은 베트남 건축가가 설계하여 1966년에 완공되었으며, 프랑스 식민지 시대의 노로돔 궁전을 대신했습니다. 1975년 4월 30일 탱크가 정문을 돌파하며 베트남 전쟁의 종결을 알린 곳입니다. 내부에는 각료 회의실, 접견실, 지하 지휘 벙커가 그대로 남아 있습니다." }
+      }
+    },
+    {
+      "slug": "nha-tho-duc-ba",
+      "latitude": 10.7798, "longitude": 106.6990, "radiusMeters": 80,
+      "address": "01 Công xã Paris, Quận 1",
+      "translations": {
+        "vi": { "name": "Nhà thờ Đức Bà Sài Gòn", "narrationText": "Bạn đang đứng trước Nhà thờ Đức Bà Sài Gòn, tên chính thức là Vương cung thánh đường Chính tòa Đức Mẹ Vô Nhiễm Nguyên Tội. Nhà thờ được xây dựng từ năm 1863 đến 1880 dưới thời Pháp thuộc, với tường gạch đỏ đặc trưng. Hai tháp chuông cao khoảng 58 mét là biểu tượng nổi bật giữa trung tâm Sài Gòn. Đừng quên ngắm tượng Đức Mẹ Hòa Bình ở phía trước." },
+        "en": { "name": "Saigon Notre-Dame Basilica", "narrationText": "You are standing in front of Saigon Notre-Dame Basilica, officially the Basilica of Our Lady of the Immaculate Conception. It was built between 1863 and 1880 during the French colonial period, using distinctive red brick. Its two bell towers, about 58 meters tall, are among the best-known landmarks of central Saigon. Do not miss the statue of Our Lady of Peace in front." },
+        "zh": { "name": "西贡圣母大教堂", "narrationText": "您眼前是西贡圣母大教堂，正式名称为圣母无染原罪主教座堂。教堂建于法属殖民时期的1863年至1880年，以独特的红砖砌成。两座钟楼高约58米，是西贡市中心最著名的地标之一。别忘了看看前方的和平圣母像。" },
+        "ja": { "name": "サイゴン大聖堂", "narrationText": "こちらはサイゴン大聖堂、正式名称は無原罪の聖母大聖堂です。フランス植民地時代の1863年から1880年にかけて、特徴的な赤レンガで建てられました。高さ約58メートルの二つの鐘楼は、サイゴン中心部を代表するランドマークです。正面の平和の聖母像もぜひご覧ください。" },
+        "ko": { "name": "사이공 노트르담 대성당", "narrationText": "지금 보고 계신 곳은 사이공 노트르담 대성당으로, 정식 명칭은 무염시태 성모 대성당입니다. 프랑스 식민지 시대인 1863년부터 1880년까지 특징적인 붉은 벽돌로 지어졌습니다. 높이 약 58미터의 두 종탑은 사이공 중심부를 대표하는 랜드마크입니다. 앞쪽의 평화의 성모상도 놓치지 마세요." }
+      }
+    },
+    {
+      "slug": "buu-dien-trung-tam",
+      "latitude": 10.7799, "longitude": 106.7000, "radiusMeters": 80,
+      "address": "02 Công xã Paris, Quận 1",
+      "translations": {
+        "vi": { "name": "Bưu điện Trung tâm Sài Gòn", "narrationText": "Bưu điện Trung tâm Sài Gòn được xây dựng từ năm 1886 đến 1891, mang phong cách kiến trúc Pháp pha lẫn nét Á Đông. Bên trong là mái vòm sắt cao rộng, hai tấm bản đồ cổ vẽ tay và chân dung Chủ tịch Hồ Chí Minh ở cuối sảnh. Đây vẫn là bưu điện đang hoạt động, nơi bạn có thể gửi một tấm bưu thiếp về cho người thân." },
+        "en": { "name": "Saigon Central Post Office", "narrationText": "The Saigon Central Post Office was built between 1886 and 1891 in French colonial style with Asian touches. Inside, you will find a tall iron-framed vaulted ceiling, two antique hand-painted maps, and a portrait of President Ho Chi Minh at the far end of the hall. It is still a working post office, so why not send a postcard home?" },
+        "zh": { "name": "西贡中央邮局", "narrationText": "西贡中央邮局建于1886年至1891年，是融合了亚洲元素的法式建筑。大厅拥有高大的铁架拱形穹顶、两幅古老的手绘地图，尽头悬挂着胡志明主席的画像。这里至今仍是一家正常营业的邮局，不妨寄一张明信片给家人吧。" },
+        "ja": { "name": "サイゴン中央郵便局", "narrationText": "サイゴン中央郵便局は1886年から1891年にかけて建てられた、アジアの要素を取り入れたフランス風の建築です。館内には鉄骨のアーチ型天井、古い手描きの地図が二枚、ホールの奥にはホー・チ・ミン主席の肖像が飾られています。今も現役の郵便局ですので、ぜひ絵はがきを送ってみてください。" },
+        "ko": { "name": "사이공 중앙우체국", "narrationText": "사이공 중앙우체국은 1886년부터 1891년 사이에 지어진, 아시아적 요소가 가미된 프랑스풍 건축물입니다. 내부에는 철골 아치형 천장과 오래된 손그림 지도 두 점, 그리고 홀 끝의 호찌민 주석 초상화가 있습니다. 지금도 운영 중인 우체국이니 가족에게 엽서를 보내 보세요." }
+      }
+    },
+    {
+      "slug": "cho-ben-thanh",
+      "latitude": 10.7725, "longitude": 106.6980, "radiusMeters": 100,
+      "address": "Lê Lợi, Quận 1",
+      "translations": {
+        "vi": { "name": "Chợ Bến Thành", "narrationText": "Chợ Bến Thành là biểu tượng của Sài Gòn. Tòa nhà hiện nay khánh thành năm 1914, nổi tiếng với tháp đồng hồ ở cổng Nam. Bên trong có hàng nghìn gian hàng bán đồ thủ công, vải vóc, cà phê và ẩm thực địa phương. Hãy thử một ly cà phê sữa đá và nhớ trả giá một cách thân thiện nhé." },
+        "en": { "name": "Ben Thanh Market", "narrationText": "Ben Thanh Market is a symbol of Saigon. The current building opened in 1914 and is known for its clock tower above the south gate. Inside are thousands of stalls selling handicrafts, fabrics, coffee and local food. Try an iced milk coffee, and remember that friendly bargaining is part of the experience." },
+        "zh": { "name": "滨城市场", "narrationText": "滨城市场是西贡的象征。现有建筑于1914年落成，南门上方的钟楼最为著名。市场内有数以千计的摊位，出售手工艺品、布料、咖啡和当地美食。不妨尝一杯越南冰奶咖啡，友好地讨价还价也是一种体验。" },
+        "ja": { "name": "ベンタン市場", "narrationText": "ベンタン市場はサイゴンの象徴です。現在の建物は1914年に完成し、南門の上にある時計塔で知られています。市場内には、工芸品、布地、コーヒー、地元グルメを扱う何千もの店が並びます。ベトナム風アイスミルクコーヒーを味わい、気持ちよく値段交渉をするのも楽しみのひとつです。" },
+        "ko": { "name": "벤탄 시장", "narrationText": "벤탄 시장은 사이공의 상징입니다. 현재 건물은 1914년에 완공되었으며 남문 위의 시계탑으로 유명합니다. 시장 안에는 수공예품, 직물, 커피, 현지 음식을 파는 수천 개의 상점이 있습니다. 아이스 밀크커피를 맛보고, 기분 좋게 흥정해 보는 것도 즐거운 경험입니다." }
+      }
+    },
+    {
+      "slug": "bao-tang-chung-tich-chien-tranh",
+      "latitude": 10.7794, "longitude": 106.6922, "radiusMeters": 100,
+      "address": "28 Võ Văn Tần, Quận 3",
+      "translations": {
+        "vi": { "name": "Bảo tàng Chứng tích Chiến tranh", "narrationText": "Bảo tàng Chứng tích Chiến tranh thành lập năm 1975, là một trong những bảo tàng được du khách ghé thăm nhiều nhất Việt Nam. Nơi đây trưng bày hình ảnh, hiện vật và vũ khí về cuộc chiến tranh Việt Nam cùng những hậu quả nặng nề của nó. Một số nội dung có thể gây xúc động mạnh, vì vậy hãy dành cho mình thời gian để lắng nghe và suy ngẫm." },
+        "en": { "name": "War Remnants Museum", "narrationText": "The War Remnants Museum was founded in 1975 and is one of the most visited museums in Vietnam. It displays photographs, artifacts and military equipment related to the Vietnam War and its heavy consequences. Some exhibits can be emotionally intense, so please take your time to reflect." },
+        "zh": { "name": "战争遗迹博物馆", "narrationText": "战争遗迹博物馆成立于1975年，是越南游客最多的博物馆之一。馆内陈列着与越南战争及其沉重后果有关的照片、文物和军事装备。部分展品可能令人感到沉重，请您慢慢参观，静心思考。" },
+        "ja": { "name": "戦争証跡博物館", "narrationText": "戦争証跡博物館は1975年に設立され、ベトナムで最も多くの観光客が訪れる博物館のひとつです。ベトナム戦争とその深刻な影響に関する写真、資料、軍事装備が展示されています。心に強く響く展示もありますので、ゆっくりと時間をかけてご覧ください。" },
+        "ko": { "name": "전쟁 증적 박물관", "narrationText": "전쟁 증적 박물관은 1975년에 설립되었으며 베트남에서 가장 많은 관광객이 찾는 박물관 중 하나입니다. 베트남 전쟁과 그 무거운 결과에 관한 사진, 유물, 군사 장비가 전시되어 있습니다. 감정적으로 힘든 전시도 있으니 천천히 시간을 갖고 돌아보시기 바랍니다." }
+      }
+    },
+    {
+      "slug": "nha-hat-thanh-pho",
+      "latitude": 10.7766, "longitude": 106.7032, "radiusMeters": 100,
+      "address": "07 Công trường Lam Sơn, Quận 1",
+      "translations": {
+        "vi": { "name": "Nhà hát Thành phố", "narrationText": "Nhà hát Thành phố, hay còn gọi là Nhà hát Lớn, được người Pháp xây dựng và khánh thành năm 1900, mô phỏng phong cách các nhà hát ở Pháp. Mặt tiền nổi bật với các phù điêu, cột trụ và lối vào hình vòm duyên dáng. Ngày nay nơi đây vẫn tổ chức nhiều buổi hòa nhạc và chương trình biểu diễn sân khấu." },
+        "en": { "name": "Saigon Opera House", "narrationText": "The Saigon Opera House, also called the Municipal Theatre, was built by the French and opened in 1900, inspired by theatres in France. Its facade is decorated with elegant reliefs, columns and a graceful arched entrance. Today it still hosts concerts and stage performances." },
+        "zh": { "name": "西贡歌剧院", "narrationText": "西贡歌剧院又称市民大剧院，由法国人建造，1900年启用，灵感来自法国的剧院。立面装饰有精美的浮雕、立柱和优雅的拱形入口。如今这里仍然举办音乐会和各类舞台演出。" },
+        "ja": { "name": "サイゴン市民劇場", "narrationText": "サイゴン市民劇場は、オペラハウスとも呼ばれ、フランス人によって建てられ、1900年に開場しました。フランスの劇場を手本にしています。ファサードには優美なレリーフや柱、アーチ状の入口が施されています。現在もコンサートや舞台公演が行われています。" },
+        "ko": { "name": "사이공 오페라 하우스", "narrationText": "사이공 오페라 하우스는 시립극장이라고도 불리며, 프랑스인이 지어 1900년에 문을 열었고 프랑스의 극장들에서 영감을 받았습니다. 정면은 우아한 부조와 기둥, 아치형 입구로 장식되어 있습니다. 오늘날에도 콘서트와 다양한 무대 공연이 열리고 있습니다." }
+      }
+    }
+  ]
+}
