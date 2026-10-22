@@ -15,12 +15,14 @@ public class StatsService : IStatsService
     private readonly IPlayLogRepository _logs;
     private readonly IPlaceRepository _places;
     private readonly ILanguageRepository _languages;
+    private readonly IVisitorRepository _visitors;
 
-    public StatsService(IPlayLogRepository logs, IPlaceRepository places, ILanguageRepository languages)
+    public StatsService(IPlayLogRepository logs, IPlaceRepository places, ILanguageRepository languages, IVisitorRepository visitors)
     {
         _logs = logs;
         _places = places;
         _languages = languages;
+        _visitors = visitors;
     }
 
     public async Task LogPlayAsync(PlayLogRequest r)
@@ -32,7 +34,11 @@ public class StatsService : IStatsService
         var place = await _places.FindAsync(r.PlaceId);
         if (place == null) throw new NotFoundException("Không tìm thấy địa điểm.");
 
-        await _logs.AddAsync(new PlayLog { PlaceId = place.Id, LanguageCode = lang, TriggerType = trigger });
+        int? visitorId = null;
+        var clientId = (r.ClientId ?? "").Trim();
+        if (clientId.Length > 0) visitorId = (await _visitors.FindByClientIdAsync(clientId))?.Id;
+
+        await _logs.AddAsync(new PlayLog { PlaceId = place.Id, LanguageCode = lang, TriggerType = trigger, VisitorId = visitorId });
     }
 
     public async Task<StatsDto> GetStatsAsync(int days)

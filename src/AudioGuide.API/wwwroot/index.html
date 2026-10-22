@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#c2410c">
   <title>Saigon Audio Guide</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="/css/site.css">
@@ -10,7 +11,10 @@
 <body>
   <header>
     <div class="brand"><strong>Saigon Audio Guide</strong><small id="tSub"></small></div>
-    <button id="btnLang" class="chip" type="button"></button>
+    <label class="langpick">
+      <span aria-hidden="true">🌐</span>
+      <select id="selLang" aria-label="Language"></select>
+    </label>
   </header>
 
   <div id="map"></div>
@@ -19,23 +23,29 @@
     <button id="btnGps" class="primary" type="button"></button>
     <label class="demo"><input type="checkbox" id="chkDemo"><span id="tDemo"></span></label>
   </div>
-  <div id="status" role="status"></div>
+  <div id="status" role="status" aria-live="polite"></div>
 
   <ul id="list"></ul>
+  <p id="privacy" class="privacy"></p>
 
-  <div id="player" hidden>
+  <section id="player" hidden aria-live="polite">
     <div class="player-info">
       <strong id="plName"></strong>
       <small id="plNote"></small>
       <p id="plText"></p>
     </div>
-    <button id="btnStop" class="primary" type="button"></button>
-  </div>
+    <div class="player-actions">
+      <button id="btnTap" class="primary" type="button" hidden></button>
+      <button id="btnStop" type="button"></button>
+    </div>
+  </section>
 
   <div id="overlay" hidden>
     <div class="card">
-      <h2 id="ovTitle">🌐 Choose your language / Chọn ngôn ngữ</h2>
-      <div id="ovLangs"></div>
+      <h2 id="wTitle"></h2>
+      <p id="wText"></p>
+      <button id="btnStart" class="primary big" type="button"></button>
+      <p id="wPrivacy" class="privacy"></p>
     </div>
   </div>
 

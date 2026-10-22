@@ -4,3 +4,5 @@ obj/
 .idea/
 *.user
 .env
+data/
+src/AudioGuide.API/data/

@@ -1,8 +1,10 @@
 using AudioGuide.API.Security;
 using AudioGuide.BLL;
 using AudioGuide.BLL.Services;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace AudioGuide.API.Controllers;
 
@@ -21,10 +23,21 @@ public class AdminAuthController : ControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var user = await _auth.LoginAsync(request.Username, request.Password);
         if (user == null) return Unauthorized(new { message = "Sai tên đăng nhập hoặc mật khẩu." });
         return Ok(new { token = _jwt.Create(user), displayName = user.DisplayName });
+    }
+
+    [HttpPut("password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var sub = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(sub, out var userId)) return Unauthorized();
+        await _auth.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword);
+        return NoContent();
     }
 }

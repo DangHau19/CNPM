@@ -26,8 +26,12 @@ services:
       Jwt__Key: ${JWT_KEY:-change-me-in-production-at-least-32-characters!!}
       Seed__AdminUsername: ${ADMIN_USERNAME:-admin}
       Seed__AdminPassword: ${ADMIN_PASSWORD:-Admin@123}
+      Storage__UploadPath: /app/data/uploads
+    volumes:
+      - uploads:/app/data/uploads
     ports:
       - "8080:8080"
 
 volumes:
   mysql_data:
+  uploads:

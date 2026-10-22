@@ -10,10 +10,11 @@ public record PlaceDto(
     string Name, string NarrationText, string? AudioUrl,
     string LanguageCode, string SpeechLocale, bool FellBack, double? DistanceMeters);
 
-public record PlayLogRequest(int PlaceId, string LanguageCode, string TriggerType);
+public record PlayLogRequest(int PlaceId, string LanguageCode, string TriggerType, string? ClientId = null);
 
 // ---------- Admin ----------
 public record LoginRequest(string Username, string Password);
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 public record AdminProfile(int Id, string Username, string DisplayName);
 
 public record TranslationDto(string LanguageCode, string Name, string NarrationText, string? AudioUrl);
@@ -31,3 +32,29 @@ public record LanguageSaveRequest(string Code, string Name, string NativeName, s
 
 public record StatItem(string Key, string Label, int Count);
 public record StatsDto(int TotalPlays, int GpsPlays, int ManualPlays, List<StatItem> TopPlaces, List<StatItem> ByLanguage);
+
+// ---------- Theo dõi truy cập ----------
+/// <summary>Gói tin "tôi đang online" mà trình duyệt gửi định kỳ.</summary>
+public record PingRequest(
+    string ClientId, string SessionKey, string? DeviceLanguage, string? LanguageCode,
+    bool GpsEnabled, double? Latitude, double? Longitude);
+
+/// <summary>Thông tin lấy từ HTTP request (do lớp API điền).</summary>
+public record ClientInfo(string? IpAddress, string? UserAgent);
+
+public record VisitDto(
+    long SessionId, int VisitorId, string ClientShort, string? IpAddress,
+    string DeviceType, string Browser, string Os,
+    string DeviceLanguage, string LanguageCode,
+    bool GpsEnabled, double? Latitude, double? Longitude,
+    DateTime StartedAt, DateTime LastSeenAt, int DurationSeconds, bool IsOnline,
+    int VisitorVisitCount, int Plays);
+
+public record DailyVisitDto(string Date, int Sessions, int Visitors);
+
+public record VisitOverviewDto(
+    int OnlineNow, int SessionsInRange, int UniqueVisitorsInRange, int NewVisitorsInRange,
+    int ReturningVisitorsInRange, int TotalVisitors,
+    List<DailyVisitDto> Daily, List<StatItem> ByDevice, List<StatItem> ByLanguage);
+
+public record PagedResult<T>(List<T> Items, int Total, int Page, int PageSize);

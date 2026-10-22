@@ -12,6 +12,8 @@ public class AppDbContext : DbContext
     public DbSet<PlaceTranslation> PlaceTranslations => Set<PlaceTranslation>();
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
     public DbSet<PlayLog> PlayLogs => Set<PlayLog>();
+    public DbSet<Visitor> Visitors => Set<Visitor>();
+    public DbSet<VisitSession> VisitSessions => Set<VisitSession>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -59,6 +61,29 @@ public class AppDbContext : DbContext
             e.Property(x => x.LanguageCode).HasMaxLength(10).IsRequired();
             e.Property(x => x.TriggerType).HasMaxLength(10).IsRequired();
             e.HasOne(x => x.Place).WithMany().HasForeignKey(x => x.PlaceId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Visitor).WithMany().HasForeignKey(x => x.VisitorId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<Visitor>(e =>
+        {
+            e.HasIndex(x => x.ClientId).IsUnique();
+            e.HasIndex(x => x.LastSeenAt);
+            e.Property(x => x.ClientId).HasMaxLength(64).IsRequired();
+            e.Property(x => x.DeviceLanguage).HasMaxLength(35).IsRequired();
+        });
+
+        b.Entity<VisitSession>(e =>
+        {
+            e.HasIndex(x => x.SessionKey).IsUnique();
+            e.HasIndex(x => x.LastSeenAt);
+            e.Property(x => x.SessionKey).HasMaxLength(64).IsRequired();
+            e.Property(x => x.IpAddress).HasMaxLength(45);
+            e.Property(x => x.UserAgent).HasMaxLength(400);
+            e.Property(x => x.DeviceType).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Browser).HasMaxLength(40).IsRequired();
+            e.Property(x => x.Os).HasMaxLength(40).IsRequired();
+            e.Property(x => x.LanguageCode).HasMaxLength(10).IsRequired();
+            e.HasOne(x => x.Visitor).WithMany(v => v.Sessions).HasForeignKey(x => x.VisitorId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

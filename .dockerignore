@@ -1,8 +1,9 @@
-   **/bin/
-   **/obj/
-   **/.vs/
-   .git/
-   .github/
-   *.md
-   docs/
-   tests/
+**/bin/
+**/obj/
+**/.vs/
+.git/
+.github/
+*.md
+docs/
+tests/
+data/

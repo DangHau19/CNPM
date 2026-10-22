@@ -9,18 +9,22 @@ namespace AudioGuide.BLL;
 public static class DependencyInjection
 {
     /// <summary>Composition root cho BLL + DAL: lớp API chỉ cần tham chiếu BLL.</summary>
-    public static IServiceCollection AddBusinessLogic(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddBusinessLogic(this IServiceCollection services, string connectionString, string? serverVersion = null)
     {
-        services.AddDataAccess(connectionString);
+        services.AddDataAccess(connectionString, serverVersion);
         services.AddScoped<IPlaceService, PlaceService>();
         services.AddScoped<IPlaceAdminService, PlaceAdminService>();
         services.AddScoped<ILanguageService, LanguageService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IStatsService, StatsService>();
+        services.AddScoped<IVisitorService, VisitorService>();
         return services;
     }
 
-    /// <summary>Tạo database + dữ liệu mẫu. Thử lại nhiều lần vì container MySQL có thể khởi động chậm.</summary>
+    /// <summary>
+    /// Tạo database + bảng nếu chưa có, nâng cấp database cũ (thêm bảng theo dõi truy cập), rồi nạp dữ liệu mẫu.
+    /// Thử lại nhiều lần vì MySQL/XAMPP có thể khởi động chậm hơn ứng dụng.
+    /// </summary>
     public static async Task InitializeDatabaseAsync(this IServiceProvider provider, string adminUsername, string adminPassword, int maxAttempts = 15)
     {
         for (var attempt = 1; ; attempt++)
@@ -29,7 +33,8 @@ public static class DependencyInjection
             {
                 using var scope = provider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                await db.Database.EnsureCreatedAsync();
+                await db.Database.EnsureCreatedAsync();   // DB mới: tạo toàn bộ; DB cũ: không đổi gì
+                await SchemaUpgrader.ApplyAsync(db);      // DB cũ: bổ sung bảng/cột còn thiếu, giữ nguyên dữ liệu
                 await DbSeeder.SeedAsync(db, adminUsername, PasswordHasher.Hash(adminPassword));
                 return;
             }

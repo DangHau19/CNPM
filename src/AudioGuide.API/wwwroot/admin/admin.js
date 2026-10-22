@@ -39,6 +39,7 @@
   function showLogin() { $('#loginView').hidden = false; $('#appView').hidden = true; }
 
   function logout() {
+    stopVisitorTimer();
     token = null;
     sessionStorage.removeItem('adminToken');
     showLogin();
@@ -64,10 +65,12 @@
   }
 
   async function render() {
+    stopVisitorTimer();
     document.querySelectorAll('nav [data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     languages = await api('/languages');
     if (tab === 'places') await renderPlaces();
     else if (tab === 'languages') renderLanguages();
+    else if (tab === 'visitors') await renderVisitors();
     else await renderStats();
   }
 
@@ -117,7 +120,9 @@
           <div><label>Bán kính (m)</label><input id="fRadius" type="number" value="${p.radiusMeters}"></div>
         </div>
         <label>Địa chỉ</label><input id="fAddress" value="${esc(p.address)}">
-        <label>Ảnh (URL, tùy chọn)</label><input id="fImage" value="${esc(p.imageUrl || '')}">
+        <label>Ảnh (URL hoặc tải lên, tùy chọn)</label>
+        <div class="inline"><input id="fImage" value="${esc(p.imageUrl || '')}">
+          <input id="fImageFile" type="file" accept="image/png,image/jpeg,image/webp" style="max-width:220px"></div>
         <label><input type="checkbox" id="fActive" ${p.isActive ? 'checked' : ''} style="width:auto"> Hiển thị cho du khách</label>
         <div class="row"><button class="primary" id="btnSavePlace" type="button">Lưu thông tin địa điểm</button></div>
       </div>
@@ -140,6 +145,11 @@
       openPlaceDialog(saved.id);   // mở lại để nhập bản dịch
     });
 
+    $('#fImageFile').onchange = guard(async e => {
+      const url = await upload('image', e.target.files[0]);
+      if (url) { $('#fImage').value = url; toast('Đã tải ảnh lên. Nhớ bấm "Lưu thông tin địa điểm".'); }
+    });
+
     if (id) bindTranslationButtons(id, activeLangs);
     if (!dlg.open) dlg.showModal();
   }
@@ -150,7 +160,9 @@
         <legend>${esc(lang.nativeName)} (${esc(lang.code)})</legend>
         <label>Tên địa điểm</label><input class="tName" value="${esc(t?.name || '')}">
         <label>Nội dung thuyết minh</label><textarea class="tText">${esc(t?.narrationText || '')}</textarea>
-        <label>File âm thanh (URL .mp3, tùy chọn – bỏ trống để dùng giọng đọc tự động)</label><input class="tAudio" value="${esc(t?.audioUrl || '')}">
+        <label>File âm thanh (URL hoặc tải lên .mp3/.m4a/.wav/.ogg, tùy chọn – bỏ trống để dùng giọng đọc tự động)</label>
+        <div class="inline"><input class="tAudio" value="${esc(t?.audioUrl || '')}">
+          <input class="tAudioFile" type="file" accept="audio/*" style="max-width:220px"></div>
         <div class="row">
           <button class="primary tSave" type="button">Lưu bản dịch</button>
           <button class="tTest" type="button">🔊 Nghe thử</button>
@@ -173,6 +185,10 @@
         await renderPlaces();
         openPlaceDialog(placeId);
       });
+      fs.querySelector('.tAudioFile').onchange = guard(async e => {
+        const url = await upload('audio', e.target.files[0]);
+        if (url) { fs.querySelector('.tAudio').value = url; toast('Đã tải âm thanh lên. Nhớ bấm "Lưu bản dịch".'); }
+      });
       fs.querySelector('.tTest').onclick = () => {
         const text = fs.querySelector('.tText').value;
         if (!text || !('speechSynthesis' in window)) return;
@@ -190,6 +206,123 @@
         openPlaceDialog(placeId);
       });
     });
+  }
+
+  // ---------- Tải file lên ----------
+  async function upload(kind, file) {
+    if (!file) return null;
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch('/api/admin/uploads/' + kind, { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: form });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error((data && (data.message || data.title)) || 'Tải lên thất bại (' + res.status + ')');
+    return data.url;
+  }
+
+  // ---------- Đổi mật khẩu ----------
+  $('#btnPassword').onclick = () => {
+    const dlg = $('#dlg');
+    dlg.innerHTML = `
+      <h3>Đổi mật khẩu</h3>
+      <div class="card">
+        <label>Mật khẩu hiện tại</label><input id="pwOld" type="password" autocomplete="current-password">
+        <label>Mật khẩu mới (tối thiểu 8 ký tự)</label><input id="pwNew" type="password" autocomplete="new-password">
+        <label>Nhập lại mật khẩu mới</label><input id="pwNew2" type="password" autocomplete="new-password">
+        <div class="row"><button class="primary" id="btnPwSave" type="button">Lưu</button><button id="btnPwClose" type="button">Đóng</button></div>
+      </div>`;
+    $('#btnPwClose').onclick = () => dlg.close();
+    $('#btnPwSave').onclick = guard(async () => {
+      if ($('#pwNew').value !== $('#pwNew2').value) throw new Error('Hai mật khẩu mới không khớp.');
+      await api('/auth/password', 'PUT', { currentPassword: $('#pwOld').value, newPassword: $('#pwNew').value });
+      toast('Đã đổi mật khẩu.');
+      dlg.close();
+    });
+    dlg.showModal();
+  };
+
+  // ---------- Truy cập (ai đang online, lịch sử) ----------
+  let visitorTimer = null;
+  function stopVisitorTimer() { if (visitorTimer) { clearInterval(visitorTimer); visitorTimer = null; } }
+
+  const fmtTime = iso => new Date(iso).toLocaleString('vi-VN');
+  const fmtDur = sec => sec < 60 ? sec + ' giây' : Math.round(sec / 60) + ' phút';
+  const tzOffset = () => -new Date().getTimezoneOffset();   // phút so với UTC (Việt Nam = 420)
+  const deviceIcon = d => ({ mobile: '📱', tablet: '📱', desktop: '💻', bot: '🤖' }[d] || '💻');
+
+  function visitRows(items) {
+    return items.map(v => `
+      <tr>
+        <td><span class="dot ${v.isOnline ? '' : 'off'}"></span>${v.isOnline ? 'Online' : '<span class="muted">Đã rời</span>'}</td>
+        <td>${deviceIcon(v.deviceType)} ${esc(v.browser)} · ${esc(v.os)}<br><span class="muted">#${esc(v.clientShort)} · ${v.visitorVisitCount} lượt truy cập</span></td>
+        <td>${esc(v.ipAddress || '—')}</td>
+        <td>${esc(v.languageCode)}<br><span class="muted">thiết bị: ${esc(v.deviceLanguage || '—')}</span></td>
+        <td>${v.gpsEnabled && v.latitude != null ? `<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${v.latitude}&mlon=${v.longitude}#map=17/${v.latitude}/${v.longitude}">${v.latitude}, ${v.longitude}</a>` : '<span class="muted">Không bật GPS</span>'}</td>
+        <td>${v.plays}</td>
+        <td>${fmtTime(v.startedAt)}<br><span class="muted">${fmtDur(v.durationSeconds)}</span></td>
+      </tr>`).join('') || '<tr><td colspan="7" class="muted">Chưa có dữ liệu.</td></tr>';
+  }
+
+  const visitHead = '<thead><tr><th>Trạng thái</th><th>Thiết bị</th><th>IP</th><th>Ngôn ngữ</th><th>Vị trí (gần đúng)</th><th>Lượt nghe</th><th>Bắt đầu</th></tr></thead>';
+
+  async function renderVisitors(days = 7, page = 1) {
+    const [o, online, list] = await Promise.all([
+      api(`/visitors/overview?days=${days}&tz=${tzOffset()}`),
+      api('/visitors/online'),
+      api(`/visitors?days=${days}&page=${page}&pageSize=20`)
+    ]);
+    const maxDaily = Math.max(1, ...o.daily.map(d => d.sessions));
+    const pages = Math.max(1, Math.ceil(list.total / list.pageSize));
+
+    $('#view').innerHTML = `
+      <div class="bar"><h2>Người truy cập</h2>
+        <select id="visDays" style="width:auto">
+          ${[1, 7, 30, 90].map(d => `<option value="${d}" ${d === days ? 'selected' : ''}>${d === 1 ? '24 giờ qua' : d + ' ngày qua'}</option>`).join('')}
+        </select></div>
+      <div class="grid">
+        <div class="card"><div class="muted">Đang online</div><h2><span class="dot"></span>${o.onlineNow}</h2></div>
+        <div class="card"><div class="muted">Lượt truy cập</div><h2>${o.sessionsInRange}</h2></div>
+        <div class="card"><div class="muted">Thiết bị khác nhau</div><h2>${o.uniqueVisitorsInRange}</h2></div>
+        <div class="card"><div class="muted">Khách mới / quay lại</div><h2>${o.newVisitorsInRange} / ${o.returningVisitorsInRange}</h2></div>
+        <div class="card"><div class="muted">Tổng thiết bị từ trước đến nay</div><h2>${o.totalVisitors}</h2></div>
+      </div>
+
+      <div class="card"><h3>Đang online (${online.length}) <span class="muted" style="font-size:.8rem">· tự làm mới mỗi 15 giây</span></h3>
+        <div class="scroll"><table id="onlineTable">${visitHead}<tbody>${visitRows(online)}</tbody></table></div></div>
+
+      <div class="grid">
+        <div class="card"><h3>Theo ngày</h3>
+          ${o.daily.map(d => `<div style="margin:6px 0"><div>${esc(d.date)} — <strong>${d.sessions}</strong> lượt · ${d.visitors} thiết bị</div>
+            <div class="bar-fill" style="width:${Math.round(d.sessions / maxDaily * 100)}%"></div></div>`).join('') || '<p class="muted">Chưa có dữ liệu.</p>'}</div>
+        <div class="card"><h3>Loại thiết bị</h3>
+          ${o.byDevice.map(x => `<div style="margin:6px 0">${deviceIcon(x.key)} ${esc(x.label)} — <strong>${x.count}</strong></div>`).join('') || '<p class="muted">Chưa có dữ liệu.</p>'}
+          <h3 style="margin-top:16px">Ngôn ngữ đang dùng</h3>
+          ${o.byLanguage.map(x => `<div style="margin:6px 0">${esc(x.label)} — <strong>${x.count}</strong></div>`).join('') || '<p class="muted">Chưa có dữ liệu.</p>'}</div>
+      </div>
+
+      <div class="card"><h3>Lịch sử truy cập (${list.total})</h3>
+        <div class="scroll"><table>${visitHead}<tbody>${visitRows(list.items)}</tbody></table></div>
+        <div class="row" style="align-items:center">
+          <button id="visPrev" type="button" ${page <= 1 ? 'disabled' : ''}>← Trước</button>
+          <span class="muted">Trang ${page} / ${pages}</span>
+          <button id="visNext" type="button" ${page >= pages ? 'disabled' : ''}>Sau →</button>
+        </div></div>`;
+
+    $('#visDays').onchange = guard(async e => { await renderVisitors(parseInt(e.target.value, 10), 1); });
+    $('#visPrev').onclick = guard(async () => { await renderVisitors(days, page - 1); });
+    $('#visNext').onclick = guard(async () => { await renderVisitors(days, page + 1); });
+
+    // Làm mới danh sách "đang online" mỗi 15 giây (không vẽ lại cả trang để không mất vị trí cuộn).
+    stopVisitorTimer();
+    visitorTimer = setInterval(async () => {
+      try {
+        const [fresh, ov] = await Promise.all([api('/visitors/online'), api(`/visitors/overview?days=${days}&tz=${tzOffset()}`)]);
+        const tbl = document.querySelector('#onlineTable tbody');
+        if (!tbl) { stopVisitorTimer(); return; }
+        tbl.innerHTML = visitRows(fresh);
+        const first = document.querySelector('.grid .card h2');
+        if (first) first.innerHTML = `<span class="dot"></span>${ov.onlineNow}`;
+      } catch { /* bỏ qua lỗi tạm thời */ }
+    }, 15000);
   }
 
   // ---------- Ngôn ngữ ----------

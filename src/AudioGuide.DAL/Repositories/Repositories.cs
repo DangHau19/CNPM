@@ -27,6 +27,8 @@ public interface IPlaceRepository
 public interface IAdminUserRepository
 {
     Task<AdminUser?> GetByUsernameAsync(string username);
+    Task<AdminUser?> FindAsync(int id);
+    Task SaveAsync();
 }
 
 public interface IPlayLogRepository
@@ -100,6 +102,10 @@ public class AdminUserRepository : IAdminUserRepository
 
     public Task<AdminUser?> GetByUsernameAsync(string username) =>
         _db.AdminUsers.FirstOrDefaultAsync(u => u.Username == username);
+
+    public Task<AdminUser?> FindAsync(int id) => _db.AdminUsers.FirstOrDefaultAsync(u => u.Id == id);
+
+    public Task SaveAsync() => _db.SaveChangesAsync();
 }
 
 public class PlayLogRepository : IPlayLogRepository
@@ -130,4 +136,113 @@ public class PlayLogRepository : IPlayLogRepository
             .GroupBy(x => x.TriggerType)
             .Select(g => new PlayCount(g.Key, g.Count()))
             .ToListAsync();
+}
+
+// ---------------------------------------------------------------------------------------------
+// Theo dõi truy cập
+// ---------------------------------------------------------------------------------------------
+
+public record VisitorPlayCount(int VisitorId, int Count);
+public record VisitTimePoint(DateTime StartedAt, int VisitorId);
+
+public interface IVisitorRepository
+{
+    Task<Visitor?> FindByClientIdAsync(string clientId);                    // có tracking
+    Task<VisitSession?> FindSessionAsync(string sessionKey);                // có tracking
+    Task AddVisitorAsync(Visitor visitor);
+    Task AddSessionAsync(VisitSession session);
+    Task SaveAsync();
+
+    Task<List<VisitSession>> GetOnlineAsync(DateTime sinceUtc);             // kèm Visitor, mới nhất trước
+    Task<List<VisitSession>> GetSessionsAsync(DateTime fromUtc, int skip, int take);
+    Task<int> CountSessionsAsync(DateTime fromUtc);
+    Task<int> CountOnlineAsync(DateTime sinceUtc);
+    Task<int> CountActiveVisitorsAsync(DateTime fromUtc);                   // số thiết bị khác nhau có phiên trong kỳ
+    Task<int> CountNewVisitorsAsync(DateTime fromUtc);
+    Task<int> CountVisitorsAsync();
+    Task<List<VisitTimePoint>> GetTimePointsAsync(DateTime fromUtc);
+    Task<List<PlayCount>> CountSessionsByDeviceAsync(DateTime fromUtc);
+    Task<List<PlayCount>> CountSessionsByLanguageAsync(DateTime fromUtc);
+    Task<List<VisitorPlayCount>> CountPlaysAsync(IReadOnlyCollection<int> visitorIds);
+    Task<int> DeleteSessionsBeforeAsync(DateTime cutoffUtc);                 // dọn lịch sử truy cập cũ
+}
+
+public class VisitorRepository : IVisitorRepository
+{
+    private readonly AppDbContext _db;
+    public VisitorRepository(AppDbContext db) => _db = db;
+
+    public Task<Visitor?> FindByClientIdAsync(string clientId) =>
+        _db.Visitors.FirstOrDefaultAsync(v => v.ClientId == clientId);
+
+    public Task<VisitSession?> FindSessionAsync(string sessionKey) =>
+        _db.VisitSessions.FirstOrDefaultAsync(s => s.SessionKey == sessionKey);
+
+    public Task AddVisitorAsync(Visitor visitor)
+    {
+        _db.Visitors.Add(visitor);
+        return Task.CompletedTask;
+    }
+
+    public Task AddSessionAsync(VisitSession session)
+    {
+        _db.VisitSessions.Add(session);
+        return Task.CompletedTask;
+    }
+
+    public Task SaveAsync() => _db.SaveChangesAsync();
+
+    public Task<List<VisitSession>> GetOnlineAsync(DateTime sinceUtc) =>
+        _db.VisitSessions.Include(s => s.Visitor)
+            .Where(s => s.LastSeenAt >= sinceUtc)
+            .OrderByDescending(s => s.LastSeenAt).ToListAsync();
+
+    public Task<List<VisitSession>> GetSessionsAsync(DateTime fromUtc, int skip, int take) =>
+        _db.VisitSessions.Include(s => s.Visitor)
+            .Where(s => s.StartedAt >= fromUtc)
+            .OrderByDescending(s => s.StartedAt)
+            .Skip(skip).Take(take).ToListAsync();
+
+    public Task<int> CountSessionsAsync(DateTime fromUtc) =>
+        _db.VisitSessions.CountAsync(s => s.StartedAt >= fromUtc);
+
+    public Task<int> CountOnlineAsync(DateTime sinceUtc) =>
+        _db.VisitSessions.CountAsync(s => s.LastSeenAt >= sinceUtc);
+
+    public Task<int> CountActiveVisitorsAsync(DateTime fromUtc) =>
+        _db.VisitSessions.Where(s => s.StartedAt >= fromUtc).Select(s => s.VisitorId).Distinct().CountAsync();
+
+    public Task<int> CountNewVisitorsAsync(DateTime fromUtc) =>
+        _db.Visitors.CountAsync(v => v.FirstSeenAt >= fromUtc);
+
+    public Task<int> CountVisitorsAsync() => _db.Visitors.CountAsync();
+
+    public Task<List<VisitTimePoint>> GetTimePointsAsync(DateTime fromUtc) =>
+        _db.VisitSessions.Where(s => s.StartedAt >= fromUtc)
+            .Select(s => new VisitTimePoint(s.StartedAt, s.VisitorId)).ToListAsync();
+
+    public Task<List<PlayCount>> CountSessionsByDeviceAsync(DateTime fromUtc) =>
+        _db.VisitSessions.Where(s => s.StartedAt >= fromUtc)
+            .GroupBy(s => s.DeviceType)
+            .Select(g => new PlayCount(g.Key, g.Count())).ToListAsync();
+
+    public Task<List<PlayCount>> CountSessionsByLanguageAsync(DateTime fromUtc) =>
+        _db.VisitSessions.Where(s => s.StartedAt >= fromUtc)
+            .GroupBy(s => s.LanguageCode)
+            .Select(g => new PlayCount(g.Key, g.Count())).ToListAsync();
+
+    public async Task<List<VisitorPlayCount>> CountPlaysAsync(IReadOnlyCollection<int> visitorIds)
+    {
+        if (visitorIds.Count == 0) return new List<VisitorPlayCount>();
+        var ids = visitorIds.ToList();
+        var rows = await _db.PlayLogs
+            .Where(x => x.VisitorId != null && ids.Contains(x.VisitorId.Value))
+            .GroupBy(x => x.VisitorId!.Value)
+            .Select(g => new VisitorPlayCount(g.Key, g.Count()))
+            .ToListAsync();
+        return rows;
+    }
+
+    public Task<int> DeleteSessionsBeforeAsync(DateTime cutoffUtc) =>
+        _db.VisitSessions.Where(s => s.LastSeenAt < cutoffUtc).ExecuteDeleteAsync();
 }
