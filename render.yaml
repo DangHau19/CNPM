@@ -13,7 +13,7 @@ services:
         generateValue: true    # Render tự sinh chuỗi ngẫu nhiên đủ dài
       - key: Seed__AdminPassword
         sync: false            # mật khẩu admin ban đầu (đổi lại trong trang Admin sau khi đăng nhập)
-      - key: Translation__GoogleApiKey
-        sync: false            # API key Google Cloud Translation (dịch tự động tiếng Việt → ngôn ngữ khác). Có thể để trống.
+      - key: Translation__MyMemoryEmail
+        sync: false            # (tùy chọn) email thật của bạn để MyMemory tăng hạn mức dịch tự động mỗi ngày. Có thể để trống.
       - key: ASPNETCORE_ENVIRONMENT
         value: Production

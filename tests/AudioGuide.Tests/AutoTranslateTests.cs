@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text;
 using AudioGuide.BLL;
 using AudioGuide.BLL.Services;
 using AudioGuide.BLL.Translation;
@@ -102,5 +104,108 @@ public class AutoTranslateServiceTests
     {
         var (svc, _) = Create();
         await Assert.ThrowsAsync<BusinessException>(() => svc.TranslateAsync(new AutoTranslateRequest("xx", "a", "b")));
+    }
+}
+
+public class TextChunkerTests
+{
+    [Fact]
+    public void ShortText_IsSingleChunk() =>
+        Assert.Equal(new[] { "Xin chào. Tạm biệt." }, TextChunker.Split("Xin chào. Tạm biệt.", 450));
+
+    [Fact]
+    public void LongText_IsSplitAtSentences_WithinByteLimit()
+    {
+        var sentence = "Đây là một câu thuyết minh khá dài về Dinh Độc Lập ở Sài Gòn.";
+        var text = string.Join(" ", Enumerable.Repeat(sentence, 30));
+        var chunks = TextChunker.Split(text, 450);
+
+        Assert.True(chunks.Count > 1);
+        Assert.All(chunks, c => Assert.True(Encoding.UTF8.GetByteCount(c) <= 450));
+        Assert.Equal(text, string.Join(" ", chunks));   // không mất chữ nào
+    }
+
+    [Fact]
+    public void SingleHugeSentence_IsStillSplit()
+    {
+        var text = string.Join(" ", Enumerable.Repeat("từ", 400)) + ".";   // một câu rất dài, không có dấu chấm giữa chừng
+        var chunks = TextChunker.Split(text, 200);
+        Assert.All(chunks, c => Assert.True(Encoding.UTF8.GetByteCount(c) <= 200));
+        Assert.Equal(text, string.Join(" ", chunks));
+    }
+
+    [Fact]
+    public void Empty_GivesNoChunks() => Assert.Empty(TextChunker.Split("   ", 450));
+}
+
+public class MyMemoryTranslatorTests
+{
+    private class StubHandler : HttpMessageHandler
+    {
+        public List<string> Urls { get; } = new();
+        public Func<string> Body { get; set; } = () => "{\"responseData\":{\"translatedText\":\"Hello\"},\"responseStatus\":200}";
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Urls.Add(request.RequestUri!.ToString());
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(Body(), Encoding.UTF8, "application/json")
+            });
+        }
+    }
+
+    private static MyMemoryTranslator Create(StubHandler handler, string? email = null) =>
+        new(new HttpClient(handler), new MyMemoryOptions(email));
+
+    [Fact]
+    public async Task Translate_BuildsRequest_MapsChineseAndSendsEmail()
+    {
+        var handler = new StubHandler();
+        var result = await Create(handler, "me@example.com").TranslateAsync(new[] { "Xin chào" }, "vi", "zh");
+
+        Assert.Equal("Hello", Assert.Single(result));
+        var url = Uri.UnescapeDataString(Assert.Single(handler.Urls));
+        Assert.Contains("langpair=vi|zh-CN", url);
+        Assert.Contains("de=me@example.com", url);
+        Assert.Contains("q=Xin chào", url);
+    }
+
+    [Fact]
+    public async Task Translate_WithoutEmail_OmitsEmailParameter()
+    {
+        var handler = new StubHandler();
+        await Create(handler).TranslateAsync(new[] { "Xin chào" }, "vi", "en");
+        Assert.DoesNotContain("&de=", Assert.Single(handler.Urls));
+    }
+
+    [Fact]
+    public async Task Translate_DecodesHtmlEntities()
+    {
+        var handler = new StubHandler { Body = () => "{\"responseData\":{\"translatedText\":\"Independence Palace &#39;s gate\"},\"responseStatus\":200}" };
+        var result = await Create(handler).TranslateAsync(new[] { "x" }, "vi", "en");
+        Assert.Equal("Independence Palace 's gate", Assert.Single(result));
+    }
+
+    [Fact]
+    public async Task Translate_QuotaWarning_ThrowsBusinessException()
+    {
+        var handler = new StubHandler
+        {
+            Body = () => "{\"responseData\":{\"translatedText\":\"MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR TODAY.\"},\"responseStatus\":429,\"quotaFinished\":true}"
+        };
+        await Assert.ThrowsAsync<BusinessException>(() => Create(handler).TranslateAsync(new[] { "x" }, "vi", "en"));
+    }
+
+    [Fact]
+    public async Task Translate_LongText_SendsSeveralRequests_AndJoinsResults()
+    {
+        var handler = new StubHandler();
+        var sentence = "Đây là một câu thuyết minh khá dài về Dinh Độc Lập ở Sài Gòn.";
+        var text = string.Join(" ", Enumerable.Repeat(sentence, 30));
+        var result = await Create(handler).TranslateAsync(new[] { text }, "vi", "en");
+
+        Assert.True(handler.Urls.Count > 1);
+        Assert.Equal(string.Join(" ", Enumerable.Repeat("Hello", handler.Urls.Count)), Assert.Single(result));
     }
 }

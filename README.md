@@ -9,7 +9,7 @@ Dữ liệu mẫu: **6 địa điểm × 5 ngôn ngữ** (vi, en, zh, ja, ko).
 - **Tự thuyết minh theo GPS**: cấp quyền định vị một lần; đi vào bán kính địa điểm → hiện tên + văn bản (tô sáng từng câu) và phát giọng đọc/mp3, không cần bấm thêm. Chỉ kích hoạt khi *đi vào* vùng, sau khi đọc xong phải chờ 45 giây mới tự phát lại cùng địa điểm (kể cả khi đã ra rồi vào lại vòng tròn), hàng đợi khi đi qua nhiều địa điểm liền nhau.
 - **Ngôn ngữ mặc định = ngôn ngữ thiết bị** (vi-VN → vi, zh-TW → zh…; chưa hỗ trợ → en) và có ô chọn ngôn ngữ / "Tự động".
 - **Theo dõi truy cập** (admin → tab *Truy cập*): đang online, thiết bị/trình duyệt/HĐH, IP, ngôn ngữ, vị trí gần đúng (làm tròn ~110 m, chỉ khi bật GPS thật), số lượt nghe, khách mới/quay lại, biểu đồ theo ngày.
-- **Dịch tự động**: admin chỉ cần nhập tên + thuyết minh **tiếng Việt**, bấm "✨ Dịch sang các ngôn ngữ khác" → hệ thống điền sẵn en/zh/ja/ko (Google Cloud Translation) để xem lại rồi lưu.
+- **Dịch tự động**: admin chỉ cần nhập tên + thuyết minh **tiếng Việt**, bấm "✨ Dịch sang các ngôn ngữ khác" → hệ thống điền sẵn en/zh/ja/ko (MyMemory, miễn phí, không cần thẻ) để xem lại rồi lưu.
 - Admin: CRUD địa điểm & bản dịch, **tải lên mp3/ảnh**, quản lý ngôn ngữ, thống kê, **đổi mật khẩu**.
 - Bảo mật cơ bản: JWT, PBKDF2, giới hạn tần suất (login/ping/play-log), nhận IP thật khi chạy sau proxy.
 
@@ -56,13 +56,11 @@ Tích **"Chế độ demo"** rồi nhấp lên bản đồ vào gần một đ�
 ### Lưu ý về âm thanh tự động
 Trình duyệt chỉ cho phát tiếng sau khi người dùng chạm vào trang ít nhất một lần (nút **Bắt đầu** ở màn hình chào đã làm việc này). Nếu địa điểm kích hoạt trước lần chạm đầu tiên, chữ vẫn hiện ngay và có nút "Chạm để nghe". Trang cần được mở (màn hình sáng) khi di chuyển — ứng dụng tự xin giữ màn hình sáng nếu thiết bị hỗ trợ. Giọng đọc dùng Web Speech API; máy cần có giọng cho ngôn ngữ tương ứng (hoặc gắn file mp3 trong Admin).
 
-## Dịch tự động (tùy chọn)
-Dùng **Google Cloud Translation (Basic v2)**, miễn phí 500.000 ký tự/tháng (cần gắn tài khoản thanh toán cho project Google Cloud).
-1. Vào [Google Cloud Console](https://console.cloud.google.com/) → tạo project → bật **Cloud Translation API** → **APIs & Services → Credentials → Create credentials → API key**.
-2. (Nên làm) Ở API key chọn **Restrict key → API restrictions → Cloud Translation API**.
-3. Đặt biến môi trường `Translation__GoogleApiKey` = API key (local: `set "Translation__GoogleApiKey=..."` trong CMD hoặc `$env:Translation__GoogleApiKey="..."` trong PowerShell; Render: tab **Environment**).
-4. Trong Admin → Địa điểm → Sửa: nhập tiếng Việt → **✨ Dịch sang các ngôn ngữ khác** → xem lại → **💾 Lưu tất cả bản dịch**.
-Chưa đặt key thì nút dịch báo "chưa cấu hình", mọi tính năng khác vẫn chạy. Bản dịch máy có thể sai tên riêng — hãy xem lại trước khi lưu. Không commit API key lên GitHub.
+## Dịch tự động
+Dùng **MyMemory** — miễn phí, **không cần thẻ, không cần API key**, chạy ngay không phải cấu hình.
+- Trong Admin → Địa điểm → Sửa: nhập tiếng Việt → **✨ Dịch sang các ngôn ngữ khác** → xem lại → **💾 Lưu tất cả bản dịch**.
+- **Hạn mức:** khoảng 5.000 ký tự/ngày nếu ẩn danh. Muốn khoảng 50.000 ký tự/ngày, đặt biến môi trường `Translation__MyMemoryEmail` = email thật của bạn (local CMD: `set "Translation__MyMemoryEmail=ban@gmail.com"`; Render: tab **Environment**). Hết hạn mức thì nút dịch báo lỗi, thử lại hôm sau hoặc nhập tay.
+- Chất lượng dịch máy miễn phí thấp hơn Google/DeepL, có thể sai tên riêng/địa danh — luôn xem lại trước khi lưu. Mã dịch nằm sau interface `ITextTranslator`, muốn đổi sang dịch vụ khác chỉ cần viết một lớp mới và đổi một dòng đăng ký trong `Program.cs`.
 
 ## Chạy bằng Docker
 ```bash
@@ -73,7 +71,7 @@ Du khách: http://localhost:8080/ · Admin: http://localhost:8080/admin/ (file t
 ## Triển khai (ví dụ Render)
 Render chạy được `Dockerfile` của dự án (tự cấp biến `PORT`, ứng dụng đã đọc biến này). Cần:
 - **Database MySQL/MariaDB bên ngoài** (Render không có MySQL; dùng dịch vụ MySQL cloud như Aiven, TiDB Cloud, Railway…) → đặt `ConnectionStrings__Default`.
-- Biến môi trường: `Translation__GoogleApiKey` (dịch tự động, tùy chọn), `Jwt__Key` (≥ 32 ký tự ngẫu nhiên), `Seed__AdminPassword`, `Hosting__TrustProxy=true` (để lấy IP thật của khách qua proxy của Render).
+- Biến môi trường: `Translation__MyMemoryEmail` (tăng hạn mức dịch tự động, tùy chọn), `Jwt__Key` (≥ 32 ký tự ngẫu nhiên), `Seed__AdminPassword`, `Hosting__TrustProxy=true` (để lấy IP thật của khách qua proxy của Render).
 - Ổ đĩa của gói miễn phí là tạm thời: file tải lên sẽ mất khi redeploy. Dùng URL âm thanh/ảnh bên ngoài, hoặc gắn Persistent Disk và đặt `Storage__UploadPath` trỏ vào đó.
 - Render cấp HTTPS sẵn nên GPS hoạt động trên điện thoại.
 

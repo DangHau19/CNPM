@@ -30,10 +30,12 @@ public class AutoTranslateService : IAutoTranslateService
 
     public bool IsConfigured => _translator.IsConfigured;
 
+    private record Outcome(string Code, TranslationDto? Dto, string? Error);
+
     public async Task<AutoTranslateResult> TranslateAsync(AutoTranslateRequest r, CancellationToken ct = default)
     {
         if (!_translator.IsConfigured)
-            throw new BusinessException("Chưa cấu hình dịch tự động. Hãy đặt biến môi trường Translation__GoogleApiKey (xem README).");
+            throw new BusinessException("Dịch tự động đang tắt (chưa cấu hình dịch vụ dịch).");
 
         var source = (r.SourceLanguage ?? "vi").Trim().ToLowerInvariant();
         var name = (r.Name ?? "").Trim();
@@ -55,26 +57,26 @@ public class AutoTranslateService : IAutoTranslateService
         if (targets.Count == 0)
             throw new BusinessException("Không có ngôn ngữ đích nào để dịch (hãy bật thêm ngôn ngữ ở tab Ngôn ngữ).");
 
-        var translations = new List<TranslationDto>();
-        var failed = new List<string>();
-        string? error = null;
+        // Các ngôn ngữ dịch song song cho nhanh; mỗi ngôn ngữ lỗi riêng không làm hỏng các ngôn ngữ khác.
+        var outcomes = await Task.WhenAll(targets.Select(lang => TranslateOneAsync(lang.Code, source, name, text, ct)));
 
-        foreach (var lang in targets)
-        {
-            ct.ThrowIfCancellationRequested();
-            try
-            {
-                var result = await _translator.TranslateAsync(new[] { name, text }, source, lang.Code, ct);
-                if (result.Count != 2) throw new BusinessException("Dịch vụ dịch trả kết quả không đúng định dạng.");
-                translations.Add(new TranslationDto(lang.Code, result[0].Trim(), result[1].Trim(), null));
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                failed.Add(lang.Code);
-                error ??= ex is BusinessException ? ex.Message : "Không gọi được dịch vụ dịch.";
-            }
-        }
-
+        var translations = outcomes.Where(o => o.Dto != null).Select(o => o.Dto!).ToList();
+        var failed = outcomes.Where(o => o.Dto == null).Select(o => o.Code).ToList();
+        var error = outcomes.FirstOrDefault(o => o.Error != null)?.Error;
         return new AutoTranslateResult(translations, failed, error);
+    }
+
+    private async Task<Outcome> TranslateOneAsync(string code, string source, string name, string text, CancellationToken ct)
+    {
+        try
+        {
+            var result = await _translator.TranslateAsync(new[] { name, text }, source, code, ct);
+            if (result.Count != 2) throw new BusinessException("Dịch vụ dịch trả kết quả không đúng định dạng.");
+            return new Outcome(code, new TranslationDto(code, result[0].Trim(), result[1].Trim(), null), null);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return new Outcome(code, null, ex is BusinessException ? ex.Message : "Không gọi được dịch vụ dịch.");
+        }
     }
 }
