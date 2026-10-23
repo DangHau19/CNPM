@@ -333,7 +333,7 @@
     state.places.forEach(p => {
       if (p.distanceMeters <= p.radiusMeters) {
         if (!state.inside.has(p.id)) { state.inside.add(p.id); entering.push(p); }
-      } else if (p.distanceMeters > p.radiusMeters + EXIT_MARGIN_M) {
+      } else if (p.distanceMeters > p.radiusMeters + (state.demo ? 0 : EXIT_MARGIN_M)) {   // demo: ra khỏi vòng tròn là tính "đã rời"
         state.inside.delete(p.id);
       }
     });
@@ -346,7 +346,7 @@
 
     entering.sort((a, b) => a.distanceMeters - b.distanceMeters).forEach(p => {
       const last = state.played.get(p.id) || 0;
-      if (Date.now() - last < COOLDOWN_MS) return;
+      if (!state.demo && Date.now() - last < COOLDOWN_MS) return;   // demo: không áp dụng thời gian chờ để thử lại ngay
       if (state.playing || state.pending) {
         if (!state.queue.some(q => q.place.id === p.id)) state.queue.push({ place: p, trigger: 'gps' });
       } else {
