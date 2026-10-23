@@ -3,7 +3,9 @@ using System.Threading.RateLimiting;
 using AudioGuide.API.Middleware;
 using AudioGuide.API.Security;
 using AudioGuide.API.Storage;
+using AudioGuide.API.Translation;
 using AudioGuide.BLL;
+using AudioGuide.BLL.Translation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
@@ -24,6 +26,9 @@ if (jwt.Key.Length < 32) throw new InvalidOperationException("Jwt:Key phải dà
 
 // ---- Business + Data layers (MySQL 8 hoặc MariaDB của XAMPP) ----
 builder.Services.AddBusinessLogic(connectionString, builder.Configuration["Database:ServerVersion"]);
+
+// ---- Dịch tự động (Google Cloud Translation). Chưa có API key thì nút "Dịch tự động" ở admin báo chưa cấu hình ----
+builder.Services.AddHttpClient<ITextTranslator, GoogleTextTranslator>(c => c.Timeout = TimeSpan.FromSeconds(30));
 
 // ---- Thư mục upload ----
 var configuredUploadPath = builder.Configuration["Storage:UploadPath"];

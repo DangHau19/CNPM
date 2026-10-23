@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IStatsService, StatsService>();
         services.AddScoped<IVisitorService, VisitorService>();
+        services.AddScoped<IAutoTranslateService, AutoTranslateService>();   // cần ITextTranslator do lớp API đăng ký
         return services;
     }
 

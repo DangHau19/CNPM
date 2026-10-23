@@ -30,6 +30,13 @@ public record PlaceSaveRequest(
 
 public record LanguageSaveRequest(string Code, string Name, string NativeName, string SpeechLocale, bool IsActive, int SortOrder);
 
+// ---------- Dịch tự động ----------
+/// <summary>Nội dung nguồn (mặc định tiếng Việt). TargetLanguages trống = dịch sang mọi ngôn ngữ đang kích hoạt.</summary>
+public record AutoTranslateRequest(string? SourceLanguage, string Name, string NarrationText, List<string>? TargetLanguages = null);
+/// <summary>Failed: mã các ngôn ngữ dịch lỗi; Error: lý do của lỗi đầu tiên (nếu có).</summary>
+public record AutoTranslateResult(List<TranslationDto> Translations, List<string> Failed, string? Error);
+public record AutoTranslateStatus(bool Configured);
+
 public record StatItem(string Key, string Label, int Count);
 public record StatsDto(int TotalPlays, int GpsPlays, int ManualPlays, List<StatItem> TopPlaces, List<StatItem> ByLanguage);
 

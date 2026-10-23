@@ -126,6 +126,13 @@
         <label><input type="checkbox" id="fActive" ${p.isActive ? 'checked' : ''} style="width:auto"> Hiển thị cho du khách</label>
         <div class="row"><button class="primary" id="btnSavePlace" type="button">Lưu thông tin địa điểm</button></div>
       </div>
+      ${id ? `<div class="card" id="autoBox">
+        <strong>✨ Dịch tự động từ tiếng Việt</strong>
+        <p class="muted" style="margin:6px 0">Nhập <b>tên</b> và <b>nội dung thuyết minh</b> tiếng Việt ở khung bên dưới, rồi bấm nút này.
+          Hệ thống điền sẵn các ngôn ngữ còn lại để bạn xem lại; mỗi ngôn ngữ vẫn phải bấm <b>Lưu bản dịch</b> (hoặc dùng nút "Lưu tất cả").</p>
+        <div class="row"><button class="primary" id="btnAutoTranslate" type="button">✨ Dịch sang các ngôn ngữ khác</button>
+          <button id="btnSaveAll" type="button">💾 Lưu tất cả bản dịch</button></div>
+      </div>` : ''}
       <div id="transBox">
         ${id ? activeLangs.map(l => translationBlock(l, p.translations.find(t => t.languageCode === l.code))).join('')
              : '<p class="muted">Lưu địa điểm trước, sau đó nhập nội dung thuyết minh cho từng ngôn ngữ.</p>'}
@@ -150,7 +157,7 @@
       if (url) { $('#fImage').value = url; toast('Đã tải ảnh lên. Nhớ bấm "Lưu thông tin địa điểm".'); }
     });
 
-    if (id) bindTranslationButtons(id, activeLangs);
+    if (id) { bindTranslationButtons(id, activeLangs); bindAutoTranslate(id); }
     if (!dlg.open) dlg.showModal();
   }
 
@@ -205,6 +212,59 @@
         await renderPlaces();
         openPlaceDialog(placeId);
       });
+    });
+  }
+
+  // ---------- Dịch tự động từ tiếng Việt ----------
+  function bindAutoTranslate(placeId) {
+    const box = fs => document.querySelector(`#transBox fieldset[data-lang="${fs}"]`);
+    const btn = $('#btnAutoTranslate');
+    const viBox = box('vi');
+    if (!viBox) { btn.disabled = true; btn.title = 'Chưa bật ngôn ngữ tiếng Việt (vi).'; }
+
+    btn.onclick = guard(async () => {
+      const vi = box('vi');
+      const name = vi.querySelector('.tName').value.trim();
+      const text = vi.querySelector('.tText').value.trim();
+      if (!name || !text) throw new Error('Hãy nhập tên và nội dung thuyết minh tiếng Việt trước.');
+
+      const others = [...document.querySelectorAll('#transBox fieldset')].filter(f => f.dataset.lang !== 'vi' && (f.querySelector('.tName').value || f.querySelector('.tText').value));
+      if (others.length && !confirm('Các ngôn ngữ khác đã có nội dung. Dịch lại sẽ GHI ĐÈ lên phần đang hiển thị (chưa lưu thì mất). Tiếp tục?')) return;
+
+      btn.disabled = true;
+      const oldLabel = btn.textContent;
+      btn.textContent = '⏳ Đang dịch...';
+      try {
+        const r = await api('/translate', 'POST', { sourceLanguage: 'vi', name, narrationText: text });
+        r.translations.forEach(t => {
+          const fs = box(t.languageCode);
+          if (!fs) return;
+          fs.querySelector('.tName').value = t.name;
+          fs.querySelector('.tText').value = t.narrationText;
+        });
+        if (r.failed.length) toast('Dịch lỗi ở: ' + r.failed.join(', ') + (r.error ? ' — ' + r.error : ''), true);
+        else toast('Đã dịch xong. Hãy xem lại rồi bấm "Lưu tất cả bản dịch".');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = oldLabel;
+      }
+    });
+
+    $('#btnSaveAll').onclick = guard(async () => {
+      const saved = [], skipped = [];
+      for (const fs of document.querySelectorAll('#transBox fieldset')) {
+        const name = fs.querySelector('.tName').value.trim();
+        const text = fs.querySelector('.tText').value.trim();
+        if (!name && !text) continue;                       // ngôn ngữ chưa nhập: bỏ qua
+        if (!name || !text) { skipped.push(fs.dataset.lang); continue; }
+        await api(`/places/${placeId}/translations/${fs.dataset.lang}`, 'PUT',
+          { name, narrationText: text, audioUrl: fs.querySelector('.tAudio').value });
+        saved.push(fs.dataset.lang);
+      }
+      if (!saved.length && !skipped.length) throw new Error('Chưa có bản dịch nào để lưu.');
+      toast('Đã lưu: ' + (saved.join(', ') || '—') + (skipped.length ? ' · bỏ qua (thiếu tên hoặc nội dung): ' + skipped.join(', ') : ''), skipped.length > 0 && !saved.length);
+      await renderPlaces();
+      openPlaceDialog(placeId);
     });
   }
 

@@ -38,7 +38,7 @@ flowchart LR
 | # | Quy tắc |
 |---|---|
 | BR1 | Mỗi địa điểm có tọa độ GPS và bán kính kích hoạt (20–2000 m, mặc định 80–120 m). |
-| BR2 | Chế độ tự động chỉ kích hoạt khi du khách **đi vào** bán kính (không phát lặp lại khi đứng yên) và không phát lại cùng một địa điểm trong 10 phút. Phải đi ra xa hơn bán kính 25 m thì lần vào lại sau mới được tính là "đi vào" (chống nhiễu GPS). |
+| BR2 | Chế độ tự động chỉ kích hoạt khi du khách **đi vào** bán kính (không phát lặp lại khi đứng yên) và không phát lại cùng một địa điểm trong 45 giây kể từ khi đọc xong (và không phát lặp khi đang đọc chính địa điểm đó). Phải đi ra xa hơn bán kính 25 m thì lần vào lại sau mới được tính là "đi vào" (chống nhiễu GPS). Ở chế độ demo không áp dụng thời gian chờ. |
 | BR3 | Nếu địa điểm chưa có bản dịch của ngôn ngữ đã chọn, hệ thống dùng tiếng Anh, rồi tiếng Việt. |
 | BR4 | Chỉ quản trị viên đã đăng nhập (JWT) mới được thêm/sửa/xóa dữ liệu. |
 | BR5 | Slug duy nhất, chỉ gồm chữ thường/số/gạch ngang; vĩ độ −90..90; kinh độ −180..180. |
@@ -97,7 +97,7 @@ flowchart LR
 | 1. Perform {UC1 Ngôn ngữ mặc định theo thiết bị}. | 2. Lần đầu: hiển thị màn hình chào và nút "Bắt đầu". Các lần sau: tự bắt đầu. |
 | 3. Du khách bấm "Bắt đầu" và cho phép truy cập vị trí. | 4. Hệ thống theo dõi vị trí liên tục từ GPS, giữ màn hình sáng (nếu thiết bị hỗ trợ). |
 | 5. GPS gửi vị trí mới. | 6. Hệ thống tính khoảng cách tới mọi địa điểm, xác định các địa điểm vừa "đi vào" bán kính {BR2}. A1, A5 |
-| | 7. Nếu địa điểm chưa phát trong 10 phút: hiển thị tên + văn bản thuyết minh và phát file âm thanh hoặc đọc bằng giọng của ngôn ngữ đã chọn, tô sáng câu đang đọc. A2, A3, A6 |
+| | 7. Nếu địa điểm đã đọc xong cách đây hơn 45 giây (hoặc chưa phát lần nào): hiển thị tên + văn bản thuyết minh và phát file âm thanh hoặc đọc bằng giọng của ngôn ngữ đã chọn, tô sáng câu đang đọc. A2, A3, A6 |
 | | 8. Hệ thống ghi log lượt nghe (gps) kèm thiết bị. Khi đọc xong, phát tiếp địa điểm đang chờ trong hàng đợi (nếu còn đứng trong vùng). Use case kết thúc. |
 
 **Alternative Paths:** A1. Không có địa điểm trong bán kính → hiển thị "Chưa có địa điểm nào trong phạm vi · Gần nhất: ... (… m)". A2. Đang phát bài khác → địa điểm mới vào hàng đợi, phát sau khi bài hiện tại xong. A3. Không tải được file âm thanh → chuyển sang giọng đọc tự động. A4. Du khách bấm "Dừng/Đóng" → dừng phát và xóa hàng đợi. A5. Sai số GPS > 200 m → báo "Tín hiệu GPS yếu", chưa kích hoạt. A6. Trình duyệt chưa cho phát âm thanh (chưa có lần chạm nào) → hiện chữ ngay, hiện nút "Chạm để nghe"; phát tiếng ở lần chạm đầu tiên {BR10}.
@@ -249,7 +249,7 @@ flowchart TD
   C --> D[Theo dõi vị trí GPS]
   D --> E{Vừa đi vào bán kính<br/>một địa điểm?}
   E -- Không --> D
-  E -- Có --> F{Đã phát trong 10 phút?}
+  E -- Có --> F{Đọc xong chưa quá 45 giây?}
   F -- Có --> D
   F -- Không --> G[Hiển thị tên + văn bản thuyết minh]
   G --> H{Đang phát bài khác<br/>hoặc chờ chạm?}

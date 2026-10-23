@@ -2,7 +2,7 @@
   'use strict';
 
   const API = '/api/public';
-  const COOLDOWN_MS = 10 * 60 * 1000;   // không tự phát lại cùng một địa điểm trong 10 phút
+  const COOLDOWN_MS = 45 * 1000;        // sau khi đọc xong, phải chờ 45 giây (kể cả đã ra rồi vào lại vòng tròn) mới tự phát lại địa điểm đó
   const EXIT_MARGIN_M = 25;             // phải đi ra khỏi bán kính + 25 m thì lần sau vào lại mới phát tiếp (chống nhấp nháy GPS)
   const MAX_ACCURACY_M = 200;           // sai số GPS lớn hơn mức này thì chưa dùng để tự kích hoạt
   const PING_MS = 30 * 1000;            // báo "đang online" cho máy chủ mỗi 30 giây
@@ -124,7 +124,8 @@
     pending: null,          // đang chờ người dùng chạm lần đầu để trình duyệt cho phép phát âm thanh
     queue: [],              // các địa điểm vừa đi vào vùng nhưng phải chờ bài đang đọc xong
     inside: new Set(),      // các địa điểm đang nằm trong bán kính (để chỉ kích hoạt khi "đi vào")
-    played: new Map(),      // placeId -> thời điểm phát gần nhất
+    played: new Map(),      // placeId -> thời điểm đọc XONG gần nhất (hoặc lúc bắt đầu nếu đang đọc)
+    current: null,          // địa điểm đang đọc (hoặc đang chờ chạm để đọc)
     sentences: [],
     wakeLock: null,
     clientId: getId(store, 'clientId'),          // định danh ẩn danh của thiết bị
@@ -345,8 +346,11 @@
     else setStatus(t('none'));
 
     entering.sort((a, b) => a.distanceMeters - b.distanceMeters).forEach(p => {
-      const last = state.played.get(p.id) || 0;
-      if (!state.demo && Date.now() - last < COOLDOWN_MS) return;   // demo: không áp dụng thời gian chờ để thử lại ngay
+      if (!state.demo) {   // demo: phát lại lập tức, không áp dụng thời gian chờ
+        const last = state.played.get(p.id) || 0;
+        const busyHere = (state.playing || state.pending) && state.current && state.current.id === p.id;
+        if (busyHere || Date.now() - last < COOLDOWN_MS) return;   // đang đọc chính nơi này, hoặc chưa đủ 45 giây sau khi đọc xong
+      }
       if (state.playing || state.pending) {
         if (!state.queue.some(q => q.place.id === p.id)) state.queue.push({ place: p, trigger: 'gps' });
       } else {
@@ -418,6 +422,7 @@
     stopPlayback();
     const token = ++state.playToken;
     state.played.set(place.id, Date.now());
+    state.current = place;
     showPlayer(place);
 
     if (!canAutoplay()) {
@@ -442,6 +447,8 @@
     const done = () => {
       if (token !== state.playToken) return;   // lần phát này đã bị thay thế/dừng
       state.playing = false;
+      state.current = null;
+      state.played.set(place.id, Date.now());   // tính 45 giây chờ từ lúc đọc xong
       highlight(-1);
       $('btnStop').textContent = t('close');
       playNextInQueue();
@@ -527,6 +534,7 @@
   function stopPlayback() {
     state.playToken++;   // vô hiệu hóa mọi callback của lần phát trước
     state.playing = false;
+    state.current = null;
     state.pending = null;
     if (state.audio) { state.audio.pause(); state.audio = null; }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
