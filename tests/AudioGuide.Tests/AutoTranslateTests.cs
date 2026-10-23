@@ -143,12 +143,13 @@ public class MyMemoryTranslatorTests
     private class StubHandler : HttpMessageHandler
     {
         public List<string> Urls { get; } = new();
+        public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
         public Func<string> Body { get; set; } = () => "{\"responseData\":{\"translatedText\":\"Hello\"},\"responseStatus\":200}";
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Urls.Add(request.RequestUri!.ToString());
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            return Task.FromResult(new HttpResponseMessage(Status)
             {
                 Content = new StringContent(Body(), Encoding.UTF8, "application/json")
             });
@@ -195,6 +196,14 @@ public class MyMemoryTranslatorTests
             Body = () => "{\"responseData\":{\"translatedText\":\"MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR TODAY.\"},\"responseStatus\":429,\"quotaFinished\":true}"
         };
         await Assert.ThrowsAsync<BusinessException>(() => Create(handler).TranslateAsync(new[] { "x" }, "vi", "en"));
+    }
+
+    [Fact]
+    public async Task Translate_Http429_ExplainsQuota()
+    {
+        var handler = new StubHandler { Status = HttpStatusCode.TooManyRequests, Body = () => "{}" };
+        var ex = await Assert.ThrowsAsync<BusinessException>(() => Create(handler).TranslateAsync(new[] { "x" }, "vi", "en"));
+        Assert.Contains("hạn mức", ex.Message);
     }
 
     [Fact]

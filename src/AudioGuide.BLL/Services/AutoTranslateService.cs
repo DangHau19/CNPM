@@ -57,8 +57,10 @@ public class AutoTranslateService : IAutoTranslateService
         if (targets.Count == 0)
             throw new BusinessException("Không có ngôn ngữ đích nào để dịch (hãy bật thêm ngôn ngữ ở tab Ngôn ngữ).");
 
-        // Các ngôn ngữ dịch song song cho nhanh; mỗi ngôn ngữ lỗi riêng không làm hỏng các ngôn ngữ khác.
-        var outcomes = await Task.WhenAll(targets.Select(lang => TranslateOneAsync(lang.Code, source, name, text, ct)));
+        // Dịch lần lượt từng ngôn ngữ (gọi dồn dập dễ bị dịch vụ miễn phí chặn); mỗi ngôn ngữ lỗi riêng không làm hỏng ngôn ngữ khác.
+        var outcomes = new List<Outcome>();
+        foreach (var lang in targets)
+            outcomes.Add(await TranslateOneAsync(lang.Code, source, name, text, ct));
 
         var translations = outcomes.Where(o => o.Dto != null).Select(o => o.Dto!).ToList();
         var failed = outcomes.Where(o => o.Dto == null).Select(o => o.Code).ToList();

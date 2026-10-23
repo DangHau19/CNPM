@@ -15,6 +15,7 @@ public class MyMemoryTranslator : ITextTranslator
 {
     private const string Endpoint = "https://api.mymemory.translated.net/get";
     private const int MaxChunkBytes = 450;
+    private const string QuotaMessage = "Dịch vụ dịch miễn phí (MyMemory) đang từ chối vì hết hạn mức hoặc bị gọi quá nhiều. Hãy đợi vài phút hoặc thử lại vào ngày mai, hoặc đặt biến Translation__MyMemoryEmail (email thật của bạn) để tăng hạn mức.";
 
     private readonly HttpClient _http;
     private readonly string? _email;
@@ -47,6 +48,8 @@ public class MyMemoryTranslator : ITextTranslator
         if (_email != null) url += "&de=" + Uri.EscapeDataString(_email);
 
         using var response = await _http.GetAsync(url, ct);
+        if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            throw new BusinessException(QuotaMessage);
         if (!response.IsSuccessStatusCode)
             throw new BusinessException($"Dịch vụ dịch trả lỗi {(int)response.StatusCode}. Hãy thử lại sau.");
 
@@ -60,7 +63,7 @@ public class MyMemoryTranslator : ITextTranslator
         var quotaFinished = root.TryGetProperty("quotaFinished", out var qf) && qf.ValueKind == JsonValueKind.True;
 
         if (quotaFinished || translated.StartsWith("MYMEMORY WARNING", StringComparison.OrdinalIgnoreCase) || ReadStatus(root) == 429)
-            throw new BusinessException("Đã hết hạn mức dịch miễn phí trong ngày (MyMemory). Hãy thử lại vào ngày mai, hoặc đặt biến Translation__MyMemoryEmail (email thật của bạn) để tăng hạn mức.");
+            throw new BusinessException(QuotaMessage);
         if (ReadStatus(root) != 200 || translated.Length == 0)
             throw new BusinessException("Dịch vụ dịch không trả kết quả. Hãy thử lại sau.");
 
