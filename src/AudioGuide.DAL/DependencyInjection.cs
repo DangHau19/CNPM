@@ -10,8 +10,8 @@ public static class DependencyInjection
     private static readonly object VersionLock = new();
 
     /// <param name="serverVersion">
-    /// Tùy chọn. Bỏ trống = tự dò (hỗ trợ cả MySQL và MariaDB của XAMPP).
-    /// Ví dụ chỉ định tay: "8.0.36" hoặc "mariadb-10.4.32".
+    /// Tùy chọn. Bỏ trống = tự dò theo máy chủ MySQL đang kết nối.
+    /// Ví dụ chỉ định tay: "8.4.0".
     /// </param>
     public static IServiceCollection AddDataAccess(this IServiceCollection services, string connectionString, string? serverVersion = null)
     {

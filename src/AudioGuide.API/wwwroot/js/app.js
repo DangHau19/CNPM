@@ -22,7 +22,8 @@
           wText: 'Hãy cho phép truy cập vị trí. Khi bạn đến gần một địa điểm, ứng dụng sẽ tự động đọc và hiển thị thuyết minh, bạn không cần thao tác thêm. Nên giữ trang này mở khi di chuyển.',
           start: 'Bắt đầu',
           privacy: 'Ứng dụng ghi nhận ẩn danh thiết bị, ngôn ngữ và vị trí gần đúng để thống kê lượt truy cập.',
-          serverErr: 'Không kết nối được máy chủ.' },
+          serverErr: 'Không kết nối được máy chủ.',
+          panelHide: 'Thu gọn bảng để xem bản đồ', panelShow: 'Mở bảng địa điểm' },
     en: { sub: 'Automatic GPS audio guide', gpsOn: 'Start auto guide', gpsOff: 'Stop auto guide',
           demo: 'Demo mode: click the map to move', demoHint: 'Demo mode: click the map to simulate your position.',
           listen: 'Listen', stop: 'Stop', close: 'Close', near: 'You are near', nearest: 'Nearest',
@@ -36,7 +37,8 @@
           wText: 'Please allow location access. When you get close to a landmark, the app reads the narration aloud and shows the text automatically, with no extra taps. Keep this page open while you walk.',
           start: 'Start',
           privacy: 'The app anonymously records your device, language and approximate location for visit statistics.',
-          serverErr: 'Cannot reach the server.' },
+          serverErr: 'Cannot reach the server.',
+          panelHide: 'Collapse panel to see the map', panelShow: 'Open places panel' },
     zh: { sub: 'GPS自动语音导览', gpsOn: '开启自动导览', gpsOff: '关闭自动导览',
           demo: '演示模式：点击地图移动位置', demoHint: '演示模式：点击地图模拟您的位置。',
           listen: '收听', stop: '停止', close: '关闭', near: '您正在靠近', nearest: '最近',
@@ -50,7 +52,8 @@
           wText: '请允许访问位置信息。当您靠近景点时，应用会自动朗读并显示讲解，无需任何操作。移动时请保持本页面打开。',
           start: '开始',
           privacy: '本应用会匿名记录设备、语言和大致位置，仅用于访问统计。',
-          serverErr: '无法连接服务器。' },
+          serverErr: '无法连接服务器。',
+          panelHide: '收起面板以查看地图', panelShow: '展开地点面板' },
     ja: { sub: 'GPS自動音声ガイド', gpsOn: '自動ガイドを開始', gpsOff: '自動ガイドを停止',
           demo: 'デモモード：地図をクリックして移動', demoHint: 'デモモード：地図をクリックして現在地を再現します。',
           listen: '再生', stop: '停止', close: '閉じる', near: '近くにあります', nearest: '最寄り',
@@ -64,7 +67,8 @@
           wText: '位置情報へのアクセスを許可してください。名所に近づくと、ガイドが自動で読み上げられ、文章も表示されます。操作は不要です。移動中はこのページを開いたままにしてください。',
           start: '開始',
           privacy: '端末・言語・おおよその位置を匿名で記録し、アクセス統計に利用します。',
-          serverErr: 'サーバーに接続できません。' },
+          serverErr: 'サーバーに接続できません。',
+          panelHide: 'パネルを閉じて地図を見る', panelShow: 'スポット一覧を開く' },
     ko: { sub: 'GPS 자동 오디오 가이드', gpsOn: '자동 가이드 시작', gpsOff: '자동 가이드 중지',
           demo: '데모 모드: 지도를 클릭해 이동', demoHint: '데모 모드: 지도를 클릭해 내 위치를 시뮬레이션합니다.',
           listen: '듣기', stop: '정지', close: '닫기', near: '근처에 있습니다', nearest: '가장 가까운 곳',
@@ -78,7 +82,8 @@
           wText: '위치 접근을 허용해 주세요. 명소에 가까워지면 해설이 자동으로 재생되고 글로도 표시되므로 별도 조작이 필요 없습니다. 이동 중에는 이 페이지를 열어 두세요.',
           start: '시작',
           privacy: '기기, 언어, 대략적인 위치를 익명으로 기록하여 방문 통계에 사용합니다.',
-          serverErr: '서버에 연결할 수 없습니다.' }
+          serverErr: '서버에 연결할 수 없습니다.',
+          panelHide: '패널을 접고 지도 보기', panelShow: '장소 패널 열기' }
   };
 
   // ---------- Lưu trữ cục bộ (có thể bị chặn ở chế độ riêng tư → bọc try/catch) ----------
@@ -128,6 +133,7 @@
     current: null,          // địa điểm đang đọc (hoặc đang chờ chạm để đọc)
     sentences: [],
     wakeLock: null,
+    panelOpen: true,        // bảng bên trái đang mở hay thu gọn
     clientId: getId(store, 'clientId'),          // định danh ẩn danh của thiết bị
     sessionKey: getId(session, 'sessionKey')     // định danh phiên (mỗi tab)
   };
@@ -215,11 +221,32 @@
     $('btnStart').textContent = t('start');
     $('privacy').textContent = t('privacy');
     $('wPrivacy').textContent = t('privacy');
+    updatePanelButton();
+  }
+
+  // ---------- Bảng bên trái (thu gọn / mở rộng) ----------
+  function updatePanelButton() {
+    const btn = $('btnPanel');
+    const label = t(state.panelOpen ? 'panelHide' : 'panelShow');
+    btn.textContent = state.panelOpen ? '◀' : '▶';
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('aria-expanded', String(state.panelOpen));
+  }
+
+  /** remember = true khi do người dùng bấm nút (lưu lựa chọn cho lần mở trang sau). */
+  function setPanel(open, remember) {
+    state.panelOpen = open;
+    $('panel').classList.toggle('collapsed', !open);
+    $('panelBody').inert = !open;    // phần nội dung đang ẩn thì không nhận phím Tab
+    updatePanelButton();
+    if (remember) store.set('panelOpen', open ? '1' : '0');
   }
 
   // ---------- Bản đồ ----------
   function initMap() {
-    map = L.map('map').setView([10.7769, 106.7009], 15);
+    map = L.map('map', { zoomControl: false }).setView([10.7769, 106.7009], 15);
+    L.control.zoom({ position: 'topright' }).addTo(map);   // bảng nổi nằm bên trái nên đặt nút zoom bên phải
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
@@ -525,6 +552,7 @@
     });
     $('btnTap').hidden = true;
     $('player').hidden = false;
+    if (!state.panelOpen) setPanel(true, false);   // có thuyết minh mới: tự mở bảng để hiện chữ (không ghi đè lựa chọn đã lưu)
   }
 
   function highlight(index) {
@@ -588,6 +616,8 @@
       await applyLanguage();
     };
 
+    $('btnPanel').onclick = () => setPanel(!state.panelOpen, true);
+
     $('btnStop').onclick = closePlayer;
 
     $('btnTap').onclick = () => {
@@ -642,8 +672,13 @@
   }
 
   async function init() {
+    // Lần đầu: màn hình rộng thì mở bảng, điện thoại thì thu gọn để thấy bản đồ; sau đó nhớ theo lựa chọn của người dùng.
+    const savedPanel = store.get('panelOpen');
+    const openByDefault = savedPanel === null ? !window.matchMedia('(max-width: 700px)').matches : savedPanel === '1';
     initMap();
     bindEvents();
+    setPanel(openByDefault, false);
+    requestAnimationFrame(() => requestAnimationFrame(() => $('panel').classList.remove('no-anim')));   // từ giờ mới bật hiệu ứng trượt
     try {
       state.languages = await api('/languages');
     } catch {

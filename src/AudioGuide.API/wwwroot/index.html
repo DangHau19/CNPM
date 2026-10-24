@@ -17,28 +17,36 @@
     </label>
   </header>
 
-  <div id="map"></div>
+  <main class="stage">
+    <div id="map"></div>
 
-  <div class="toolbar">
-    <button id="btnGps" class="primary" type="button"></button>
-    <label class="demo"><input type="checkbox" id="chkDemo"><span id="tDemo"></span></label>
-  </div>
-  <div id="status" role="status" aria-live="polite"></div>
+    <!-- Bảng bên trái: danh sách + nội dung thuyết minh. Thu gọn bằng nút ◀ để xem toàn bộ bản đồ. -->
+    <aside id="panel" class="panel no-anim">
+      <button id="btnPanel" class="panel-toggle" type="button" aria-expanded="true" aria-controls="panelBody"></button>
+      <div id="panelBody" class="panel-body">
+        <div class="toolbar">
+          <button id="btnGps" class="primary" type="button"></button>
+          <label class="demo"><input type="checkbox" id="chkDemo"><span id="tDemo"></span></label>
+        </div>
+        <div id="status" role="status" aria-live="polite"></div>
 
-  <ul id="list"></ul>
-  <p id="privacy" class="privacy"></p>
+        <section id="player" hidden aria-live="polite">
+          <div class="player-info">
+            <strong id="plName"></strong>
+            <small id="plNote"></small>
+            <p id="plText"></p>
+          </div>
+          <div class="player-actions">
+            <button id="btnTap" class="primary" type="button" hidden></button>
+            <button id="btnStop" type="button"></button>
+          </div>
+        </section>
 
-  <section id="player" hidden aria-live="polite">
-    <div class="player-info">
-      <strong id="plName"></strong>
-      <small id="plNote"></small>
-      <p id="plText"></p>
-    </div>
-    <div class="player-actions">
-      <button id="btnTap" class="primary" type="button" hidden></button>
-      <button id="btnStop" type="button"></button>
-    </div>
-  </section>
+        <ul id="list"></ul>
+        <p id="privacy" class="privacy"></p>
+      </div>
+    </aside>
+  </main>
 
   <div id="overlay" hidden>
     <div class="card">

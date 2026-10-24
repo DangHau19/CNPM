@@ -18,13 +18,12 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IStatsService, StatsService>();
         services.AddScoped<IVisitorService, VisitorService>();
-        services.AddScoped<IAutoTranslateService, AutoTranslateService>();   // cần ITextTranslator do lớp API đăng ký
         return services;
     }
 
     /// <summary>
-    /// Tạo database + bảng nếu chưa có, nâng cấp database cũ (thêm bảng theo dõi truy cập), rồi nạp dữ liệu mẫu.
-    /// Thử lại nhiều lần vì MySQL/XAMPP có thể khởi động chậm hơn ứng dụng.
+    /// Tạo database + bảng nếu chưa có, rồi nạp dữ liệu mẫu.
+    /// Thử lại nhiều lần vì MySQL có thể khởi động chậm hơn ứng dụng.
     /// </summary>
     public static async Task InitializeDatabaseAsync(this IServiceProvider provider, string adminUsername, string adminPassword, int maxAttempts = 15)
     {
@@ -34,8 +33,7 @@ public static class DependencyInjection
             {
                 using var scope = provider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                await db.Database.EnsureCreatedAsync();   // DB mới: tạo toàn bộ; DB cũ: không đổi gì
-                await SchemaUpgrader.ApplyAsync(db);      // DB cũ: bổ sung bảng/cột còn thiếu, giữ nguyên dữ liệu
+                await db.Database.EnsureCreatedAsync();   // database trống: tạo toàn bộ bảng
                 await DbSeeder.SeedAsync(db, adminUsername, PasswordHasher.Hash(adminPassword));
                 return;
             }

@@ -1,27 +1,35 @@
+# Chạy toàn bộ hệ thống bằng Docker:   docker compose up --build
+#   Du khách:    http://localhost:8080/
+#   Admin:       http://localhost:8080/admin/
+#   phpMyAdmin:  http://localhost:8081/   (đăng nhập root / mật khẩu MYSQL_ROOT_PASSWORD, mặc định "root")
+# Có thể đổi mật khẩu/khóa bằng file .env (xem .env.example).
 services:
   db:
     image: mysql:8.4
+    restart: unless-stopped
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: hcmc_audioguide
     ports:
-      - "3306:3306"
+      - "3307:3306"        # cổng 3307 trên máy bạn (tránh đụng MySQL/XAMPP đang dùng 3306)
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-root}"]
       interval: 5s
       timeout: 5s
-      retries: 20
+      retries: 30
+      start_period: 20s
 
   api:
     build: .
-    image: ${API_IMAGE:-hcmc-audioguide:local}
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
+      ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Default: "Server=db;Port=3306;Database=hcmc_audioguide;User=root;Password=${MYSQL_ROOT_PASSWORD:-root};CharSet=utf8mb4;"
       Jwt__Key: ${JWT_KEY:-change-me-in-production-at-least-32-characters!!}
       Seed__AdminUsername: ${ADMIN_USERNAME:-admin}
@@ -31,6 +39,18 @@ services:
       - uploads:/app/data/uploads
     ports:
       - "8080:8080"
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: db
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "8081:80"
 
 volumes:
   mysql_data:

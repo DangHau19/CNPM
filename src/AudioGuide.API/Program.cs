@@ -4,7 +4,6 @@ using AudioGuide.API.Middleware;
 using AudioGuide.API.Security;
 using AudioGuide.API.Storage;
 using AudioGuide.BLL;
-using AudioGuide.BLL.Translation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
@@ -13,22 +12,14 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Render/Heroku... cấp cổng qua biến PORT.
-var port = Environment.GetEnvironmentVariable("PORT");
-if (!string.IsNullOrWhiteSpace(port)) builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Thiếu ConnectionStrings:Default");
 
 var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
 if (jwt.Key.Length < 32) throw new InvalidOperationException("Jwt:Key phải dài tối thiểu 32 ký tự.");
 
-// ---- Business + Data layers (MySQL 8 hoặc MariaDB của XAMPP) ----
+// ---- Business + Data layers (MySQL 8) ----
 builder.Services.AddBusinessLogic(connectionString, builder.Configuration["Database:ServerVersion"]);
-
-// ---- Dịch tự động (MyMemory: miễn phí, không cần thẻ/API key). Translation:MyMemoryEmail là tùy chọn để tăng hạn mức/ngày ----
-builder.Services.AddSingleton(new MyMemoryOptions(builder.Configuration["Translation:MyMemoryEmail"]));
-builder.Services.AddHttpClient<ITextTranslator, MyMemoryTranslator>(c => c.Timeout = TimeSpan.FromSeconds(30));
 
 // ---- Thư mục upload ----
 var configuredUploadPath = builder.Configuration["Storage:UploadPath"];
@@ -77,10 +68,9 @@ builder.Services.AddRateLimiter(o =>
     o.AddPolicy("play", ctx => Window(ctx, 120, TimeSpan.FromMinutes(1)));
 });
 
-// Phía sau reverse proxy (Render, Nginx...): lấy IP thật của khách từ X-Forwarded-For.
-// Tự bật trên Render (Render luôn đặt biến RENDER=true); nơi khác chỉ bật khi chắc chắn có proxy tin cậy (Hosting__TrustProxy=true).
-var trustProxy = builder.Configuration.GetValue<bool>("Hosting:TrustProxy")
-    || string.Equals(Environment.GetEnvironmentVariable("RENDER"), "true", StringComparison.OrdinalIgnoreCase);
+// Phía sau reverse proxy (Nginx, Cloudflare Tunnel...): lấy IP thật của khách từ X-Forwarded-For.
+// Mặc định tắt; chỉ bật khi chắc chắn có proxy tin cậy phía trước (Hosting__TrustProxy=true).
+var trustProxy = builder.Configuration.GetValue<bool>("Hosting:TrustProxy");
 if (trustProxy)
 {
     builder.Services.Configure<ForwardedHeadersOptions>(o =>

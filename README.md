@@ -6,74 +6,59 @@ Trang **Admin** quản lý địa điểm, nội dung đa ngôn ngữ, thống k
 Dữ liệu mẫu: **6 địa điểm × 5 ngôn ngữ** (vi, en, zh, ja, ko).
 
 ## Tính năng chính
-- **Tự thuyết minh theo GPS**: cấp quyền định vị một lần; đi vào bán kính địa điểm → hiện tên + văn bản (tô sáng từng câu) và phát giọng đọc/mp3, không cần bấm thêm. Chỉ kích hoạt khi *đi vào* vùng, sau khi đọc xong phải chờ 45 giây mới tự phát lại cùng địa điểm (kể cả khi đã ra rồi vào lại vòng tròn), hàng đợi khi đi qua nhiều địa điểm liền nhau.
+- **Tự thuyết minh theo GPS**: cấp quyền định vị một lần; đi vào bán kính địa điểm → hiện tên + văn bản (tô sáng từng câu) và phát giọng đọc/mp3, không cần bấm thêm. Chỉ kích hoạt khi *đi vào* vùng; sau khi đọc xong phải chờ 45 giây mới tự phát lại cùng địa điểm; hàng đợi khi đi qua nhiều địa điểm liền nhau.
+- **Giao diện bản đồ lớn**: bản đồ chiếm toàn màn hình; nội dung thuyết minh và danh sách địa điểm nằm trong bảng bên trái, có thể **thu nhỏ / mở rộng** để không che bản đồ.
 - **Ngôn ngữ mặc định = ngôn ngữ thiết bị** (vi-VN → vi, zh-TW → zh…; chưa hỗ trợ → en) và có ô chọn ngôn ngữ / "Tự động".
 - **Theo dõi truy cập** (admin → tab *Truy cập*): đang online, thiết bị/trình duyệt/HĐH, IP, ngôn ngữ, vị trí gần đúng (làm tròn ~110 m, chỉ khi bật GPS thật), số lượt nghe, khách mới/quay lại, biểu đồ theo ngày.
-- **Dịch tự động**: admin chỉ cần nhập tên + thuyết minh **tiếng Việt**, bấm "✨ Dịch sang các ngôn ngữ khác" → hệ thống điền sẵn en/zh/ja/ko (MyMemory, miễn phí, không cần thẻ) để xem lại rồi lưu.
-- Admin: CRUD địa điểm & bản dịch, **tải lên mp3/ảnh**, quản lý ngôn ngữ, thống kê, **đổi mật khẩu**.
-- Bảo mật cơ bản: JWT, PBKDF2, giới hạn tần suất (login/ping/play-log), nhận IP thật khi chạy sau proxy.
+- Admin: CRUD địa điểm & bản dịch (nhập tay từng ngôn ngữ, có nút **Lưu tất cả bản dịch**), **tải lên mp3/ảnh**, quản lý ngôn ngữ, thống kê, **đổi mật khẩu**.
+- Bảo mật cơ bản: JWT, PBKDF2, giới hạn tần suất (login/ping/play-log).
 
-## Kiến trúc 3 lớp (.NET 10 + MySQL/MariaDB)
+## Kiến trúc 3 lớp (.NET 10 + MySQL 8)
 ```
 Presentation  AudioGuide.API   ASP.NET Core Web API + giao diện web
                                ├─ /        → ứng dụng du khách (Leaflet + Geolocation + Speech Synthesis)
                                └─ /admin/  → trang quản trị (JWT)
 Business      AudioGuide.BLL   Service, DTO, validation, Haversine, băm mật khẩu, nhận diện ngôn ngữ/thiết bị
-Data access   AudioGuide.DAL   EF Core (Pomelo MySQL), Repository, seed dữ liệu, nâng cấp schema
+Data access   AudioGuide.DAL   EF Core (Pomelo MySQL), Repository, seed dữ liệu
 Tests         AudioGuide.Tests xUnit (EF Core InMemory)
 ```
 
-## Chạy local với XAMPP + phpMyAdmin
-Yêu cầu: [.NET SDK 10](https://dotnet.microsoft.com/download) và XAMPP.
+## Chạy bằng Docker (cách chạy chính thức của dự án)
+Cần cài **Docker Desktop** (Windows dùng WSL2) và bật nó lên. Không cần cài .NET hay MySQL.
 
-1. Mở **XAMPP Control Panel** → bấm **Start** ở dòng **MySQL** (Apache chỉ cần nếu muốn dùng phpMyAdmin).
-2. Chạy ứng dụng:
-   ```bash
-   dotnet run --project src/AudioGuide.API --urls http://localhost:5000
-   ```
-   - **Chưa có database**: ứng dụng tự tạo database `hcmc_audioguide`, toàn bộ bảng và nạp dữ liệu mẫu.
-   - **Đã có database** (từ phiên bản cũ): ứng dụng tự **bổ sung** bảng `Visitors`, `VisitSessions` và cột `PlayLogs.VisitorId`, **giữ nguyên dữ liệu cũ**. Chạy lại nhiều lần vẫn an toàn.
-3. Mở **http://localhost/phpmyadmin** → chọn database `hcmc_audioguide` để xem dữ liệu (bảng `Visitors`, `VisitSessions`, `PlayLogs`…).
-4. Du khách: http://localhost:5000/ · Admin: http://localhost:5000/admin/ — tài khoản `admin` / `Admin@123` (**hãy đổi ngay bằng nút "Đổi mật khẩu"**).
-
-Chuỗi kết nối mặc định (`appsettings.json`) dùng tài khoản XAMPP mặc định `root` không mật khẩu, cổng 3306:
-`Server=localhost;Port=3306;Database=hcmc_audioguide;User=root;Password=;CharSet=utf8mb4;`
-Nếu root của bạn có mật khẩu hoặc MySQL chạy cổng khác (vd 3307), ghi đè bằng biến môi trường, không cần sửa file:
 ```bash
-# Windows PowerShell
-$env:ConnectionStrings__Default = "Server=localhost;Port=3307;Database=hcmc_audioguide;User=root;Password=matkhau;CharSet=utf8mb4;"
+git clone https://github.com/DangHau19/CNPM.git
+cd CNPM
+docker compose up --build
 ```
-Ứng dụng tự dò phiên bản máy chủ (MariaDB của XAMPP hoặc MySQL 8). Có thể chỉ định tay bằng `Database__ServerVersion` (vd `mariadb-10.4.32` hoặc `8.0.36`).
+Lần đầu build mất vài phút. Khi thấy dòng báo ứng dụng đang lắng nghe, mở:
 
-> Lưu ý gói: Pomelo 9.0.0 chỉ tương thích EF Core 9.0.x (chưa có bản cho EF Core 10), nhưng vẫn chạy trên runtime .NET 10. Không thêm package `Microsoft.EntityFrameworkCore.*` bản 10.
+| Dịch vụ | Địa chỉ | Ghi chú |
+|---|---|---|
+| Du khách | http://localhost:8080/ | |
+| Admin | http://localhost:8080/admin/ | `admin` / `Admin@123` (đổi bằng nút **Đổi mật khẩu**) |
+| phpMyAdmin | http://localhost:8081/ | đăng nhập `root` / `root` → database `hcmc_audioguide` → bảng `VisitSessions`, `Visitors`, `PlayLogs`… |
+| MySQL (công cụ ngoài) | `localhost:3307` | user `root`, mật khẩu `root` |
 
-### Thử GPS thật trên điện thoại
-Trình duyệt chỉ cấp GPS trên **HTTPS** hoặc `localhost`. Chạy `dotnet run ... --urls http://0.0.0.0:5000` rồi mở tunnel HTTPS (ngrok / Cloudflare Tunnel) tới cổng 5000 và mở link đó trên điện thoại.
+Ứng dụng tự tạo database, các bảng và dữ liệu mẫu ở lần chạy đầu.
+
+**Lệnh thường dùng**
+```bash
+docker compose up -d --build   # chạy nền (sau khi sửa code thì thêm --build)
+docker compose logs -f api     # xem log của ứng dụng
+docker compose down            # dừng (giữ dữ liệu)
+docker compose down -v         # dừng và XÓA toàn bộ dữ liệu (database + file tải lên)
+```
+Muốn đổi mật khẩu/khóa: sao chép `.env.example` thành `.env` rồi sửa (xem file đó). Dữ liệu nằm trong volume Docker `mysql_data`, file admin tải lên nằm trong volume `uploads`.
+
+### Thử GPS trên điện thoại
+Trình duyệt chỉ cấp GPS trên **HTTPS** hoặc `localhost`. Mở tunnel HTTPS (ngrok / Cloudflare Tunnel) tới cổng 8080 rồi mở link đó trên điện thoại.
 
 ### Demo không cần đi thật
-Tích **"Chế độ demo"** rồi nhấp lên bản đồ vào gần một địa điểm: ứng dụng tự phát thuyết minh như khi đi thật (vị trí demo **không** được lưu vào thống kê truy cập). Ở chế độ demo **không có thời gian chờ**: nhấp ra ngoài vòng tròn rồi nhấp lại vào trong là nghe lại ngay.
+Tích **"Chế độ demo"** rồi nhấp lên bản đồ vào bên trong vòng tròn của một địa điểm: ứng dụng tự phát thuyết minh như khi đi thật (vị trí demo **không** được lưu vào thống kê truy cập). Ở chế độ demo không có thời gian chờ: nhấp ra ngoài vòng tròn rồi nhấp lại vào trong là nghe lại ngay.
 
 ### Lưu ý về âm thanh tự động
 Trình duyệt chỉ cho phát tiếng sau khi người dùng chạm vào trang ít nhất một lần (nút **Bắt đầu** ở màn hình chào đã làm việc này). Nếu địa điểm kích hoạt trước lần chạm đầu tiên, chữ vẫn hiện ngay và có nút "Chạm để nghe". Trang cần được mở (màn hình sáng) khi di chuyển — ứng dụng tự xin giữ màn hình sáng nếu thiết bị hỗ trợ. Giọng đọc dùng Web Speech API; máy cần có giọng cho ngôn ngữ tương ứng (hoặc gắn file mp3 trong Admin).
-
-## Dịch tự động
-Dùng **MyMemory** — miễn phí, **không cần thẻ, không cần API key**, chạy ngay không phải cấu hình.
-- Trong Admin → Địa điểm → Sửa: nhập tiếng Việt → **✨ Dịch sang các ngôn ngữ khác** → xem lại → **💾 Lưu tất cả bản dịch**.
-- **Hạn mức:** khoảng 5.000 ký tự/ngày nếu ẩn danh. Muốn khoảng 50.000 ký tự/ngày, đặt biến môi trường `Translation__MyMemoryEmail` = email thật của bạn (local CMD: `set "Translation__MyMemoryEmail=ban@gmail.com"`; Render: tab **Environment**). Hết hạn mức thì nút dịch báo lỗi, thử lại hôm sau hoặc nhập tay.
-- Chất lượng dịch máy miễn phí thấp hơn Google/DeepL, có thể sai tên riêng/địa danh — luôn xem lại trước khi lưu. Mã dịch nằm sau interface `ITextTranslator`, muốn đổi sang dịch vụ khác chỉ cần viết một lớp mới và đổi một dòng đăng ký trong `Program.cs`.
-
-## Chạy bằng Docker
-```bash
-docker compose up --build
-```
-Du khách: http://localhost:8080/ · Admin: http://localhost:8080/admin/ (file tải lên lưu trong volume `uploads`).
-
-## Triển khai (ví dụ Render)
-Render chạy được `Dockerfile` của dự án (tự cấp biến `PORT`, ứng dụng đã đọc biến này). Cần:
-- **Database MySQL/MariaDB bên ngoài** (Render không có MySQL; dùng dịch vụ MySQL cloud như Aiven, TiDB Cloud, Railway…) → đặt `ConnectionStrings__Default`.
-- Biến môi trường: `Translation__MyMemoryEmail` (tăng hạn mức dịch tự động, tùy chọn), `Jwt__Key` (≥ 32 ký tự ngẫu nhiên), `Seed__AdminPassword`, `Hosting__TrustProxy=true` (để lấy IP thật của khách qua proxy của Render).
-- Ổ đĩa của gói miễn phí là tạm thời: file tải lên sẽ mất khi redeploy. Dùng URL âm thanh/ảnh bên ngoài, hoặc gắn Persistent Disk và đặt `Storage__UploadPath` trỏ vào đó.
-- Render cấp HTTPS sẵn nên GPS hoạt động trên điện thoại.
 
 ## API chính
 | Phương thức | Đường dẫn | Mô tả |
@@ -88,18 +73,15 @@ Render chạy được `Dockerfile` của dự án (tự cấp biến `PORT`, �
 | GET/POST/PUT/DELETE | `/api/admin/places[/{id}]` | CRUD địa điểm 🔒 |
 | PUT/DELETE | `/api/admin/places/{id}/translations/{lang}` | Thêm/sửa/xóa bản dịch 🔒 |
 | GET/POST/PUT | `/api/admin/languages[/{code}]` | Quản lý ngôn ngữ 🔒 |
-| POST | `/api/admin/translate` · GET `/status` | Dịch tên + thuyết minh từ tiếng Việt sang ngôn ngữ khác (không lưu) 🔒 |
 | GET | `/api/admin/stats?days=30` | Thống kê lượt nghe 🔒 |
 | GET | `/api/admin/visitors/overview?days=` · `/online` · `?days=&page=` | Người truy cập 🔒 |
 | POST | `/api/admin/uploads/audio` · `/image` | Tải file lên 🔒 |
 
 ## Quyền riêng tư
-Ứng dụng ghi nhận **ẩn danh**: mã thiết bị ngẫu nhiên (UUID lưu trên trình duyệt), ngôn ngữ, loại thiết bị/trình duyệt, IP, và — chỉ khi người dùng bật GPS thật — vị trí làm tròn ~110 m. Có thông báo hiển thị cho du khách. Nếu triển khai công khai, nên bổ sung chính sách quyền riêng tư và có kế hoạch xóa dữ liệu cũ.
+Ứng dụng ghi nhận **ẩn danh**: mã thiết bị ngẫu nhiên (UUID lưu trên trình duyệt), ngôn ngữ, loại thiết bị/trình duyệt, IP, và — chỉ khi người dùng bật GPS thật — vị trí làm tròn ~110 m. Có thông báo hiển thị cho du khách. Lịch sử truy cập cũ hơn 90 ngày tự động bị xóa (`Retention__VisitDays`).
 
-## CI/CD (GitHub Actions — `.github/workflows/ci-cd.yml`)
-1. **build-test**: restore → build → test (mọi push/PR).
-2. **docker**: build image và đẩy lên GHCR (push vào `main`).
-3. **deploy**: SSH vào server, `docker compose pull && up -d`. Cần secrets: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `JWT_KEY`, `MYSQL_ROOT_PASSWORD`, `ADMIN_PASSWORD`.
+## CI (GitHub Actions — `.github/workflows/ci.yml`)
+Mỗi lần push/PR: restore → build → test, rồi kiểm tra Docker image build được. (Chưa có bước deploy; sẽ bổ sung khi cần.)
 
 ## Tài liệu
 `docs/FocusedUseCases.md` — use case UC1–UC12 theo mẫu của giảng viên, business rules BR1–BR13, use case diagram, activity diagram (UC3), ERD (Mermaid).
