@@ -269,6 +269,12 @@
     });
   }
 
+  // Chỉ nhận ảnh từ đường dẫn nội bộ (/uploads/...) hoặc http(s)
+  function safeImg(u) {
+    u = (u || '').trim();
+    return /^(\/(?!\/)|https?:\/\/)/i.test(u) ? u : '';
+  }
+
   function renderList() {
     const list = $('list');
     list.innerHTML = '';
@@ -292,6 +298,16 @@
       btn.textContent = '▶ ' + t('listen');
       btn.onclick = () => manualPlay(p);
 
+      const src = safeImg(p.imageUrl);
+      if (src) {
+        const th = document.createElement('img');
+        th.className = 'thumb';
+        th.alt = '';
+        th.loading = 'lazy';
+        th.src = src;
+        th.onerror = () => th.remove();
+        li.append(th);
+      }
       li.append(meta, btn);
       list.appendChild(li);
     });
@@ -541,6 +557,12 @@
   function showPlayer(place) {
     $('plName').textContent = place.name;
     $('plNote').textContent = '';
+    const img = $('plImg'), imgSrc = safeImg(place.imageUrl);
+    img.hidden = true;
+    img.onerror = () => { img.hidden = true; };
+    img.onload = () => { img.hidden = false; };
+    img.alt = place.name;
+    if (imgSrc) img.src = imgSrc; else img.removeAttribute('src');
     const box = $('plText');
     box.textContent = '';
     state.sentences = splitSentences(place.narrationText);
