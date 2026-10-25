@@ -3,6 +3,8 @@
 #   Admin:       http://localhost:8080/admin/
 #   phpMyAdmin:  http://localhost:8081/   (đăng nhập root / mật khẩu MYSQL_ROOT_PASSWORD, mặc định "root")
 # Có thể đổi mật khẩu/khóa bằng file .env (xem .env.example).
+# Cho người khác truy cập qua Internet (link https tạm thời):  docker compose --profile tunnel up --build -d
+#   rồi xem link:  docker compose logs tunnel   (tìm địa chỉ https://....trycloudflare.com)
 services:
   db:
     image: mysql:8.4
@@ -12,7 +14,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: hcmc_audioguide
     ports:
-      - "3307:3306"        # cổng 3307 trên máy bạn (tránh đụng MySQL/XAMPP đang dùng 3306)
+      - "127.0.0.1:3307:3306"   # chỉ máy bạn truy cập được; cổng 3307 để tránh đụng MySQL/XAMPP đang dùng 3306
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -35,6 +37,7 @@ services:
       Seed__AdminUsername: ${ADMIN_USERNAME:-admin}
       Seed__AdminPassword: ${ADMIN_PASSWORD:-Admin@123}
       Storage__UploadPath: /app/data/uploads
+      Hosting__TrustProxy: ${TRUST_PROXY:-true}   # phía trước có Cloudflare Tunnel: lấy IP thật của khách từ X-Forwarded-For
     volumes:
       - uploads:/app/data/uploads
     ports:
@@ -50,7 +53,17 @@ services:
       PMA_HOST: db
       UPLOAD_LIMIT: 64M
     ports:
-      - "8081:80"
+      - "127.0.0.1:8081:80"   # chỉ mở trên máy bạn, KHÔNG đưa phpMyAdmin ra Internet
+
+  # Tạo link https công khai tới ứng dụng (Cloudflare Quick Tunnel, miễn phí, không cần tài khoản).
+  # Chỉ chạy khi dùng:  docker compose --profile tunnel up -d     Link đổi mỗi lần chạy lại.
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    depends_on:
+      - api
+    command: tunnel --no-autoupdate --url http://api:8080
 
 volumes:
   mysql_data:

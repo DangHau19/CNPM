@@ -51,8 +51,17 @@ docker compose down -v         # dừng và XÓA toàn bộ dữ liệu (databas
 ```
 Muốn đổi mật khẩu/khóa: sao chép `.env.example` thành `.env` rồi sửa (xem file đó). Dữ liệu nằm trong volume Docker `mysql_data`, file admin tải lên nằm trong volume `uploads`.
 
-### Thử GPS trên điện thoại
-Trình duyệt chỉ cấp GPS trên **HTTPS** hoặc `localhost`. Mở tunnel HTTPS (ngrok / Cloudflare Tunnel) tới cổng 8080 rồi mở link đó trên điện thoại.
+## Cho người khác truy cập qua Internet (Cloudflare Tunnel)
+Ứng dụng vẫn chạy trên máy bạn; Cloudflare tạo một link **https** công khai trỏ vào nó (miễn phí, không cần tài khoản). Link https cũng giúp **GPS hoạt động trên điện thoại**.
+1. Sao chép `.env.example` thành `.env` và **đổi** `MYSQL_ROOT_PASSWORD`, `ADMIN_PASSWORD`, `JWT_KEY` (không dùng mật khẩu mặc định khi công khai).
+2. Chạy: `docker compose --profile tunnel up --build -d`
+3. Lấy link: `docker compose logs tunnel` rồi tìm dòng có `https://....trycloudflare.com` (PowerShell: `docker compose logs tunnel | Select-String trycloudflare`). Gửi link đó cho mọi người.
+4. Yêu cầu: máy bạn phải **bật, có mạng, Docker Desktop đang chạy** (tắt chế độ Sleep). Link **đổi mỗi lần chạy lại** tunnel. Dừng: `docker compose --profile tunnel down`.
+
+phpMyAdmin (cổng 8081) và MySQL (cổng 3307) chỉ mở trên máy bạn (`127.0.0.1`), **không** đi qua link công khai — đừng đưa chúng ra Internet.
+
+## Xem và truy vấn database
+Mở http://localhost:8081/ (`root` + mật khẩu trong `.env`, mặc định `root`) → database `hcmc_audioguide`. Tab **SQL** để chạy câu lệnh; các câu mẫu (đang online, lượt truy cập theo ngày, thiết bị, ngôn ngữ, địa điểm được nghe nhiều, thêm địa điểm bằng SQL…) nằm trong [`docs/queries.sql`](docs/queries.sql). Dữ liệu người dùng vào bằng link công khai hiện ngay trong các bảng này.
 
 ### Demo không cần đi thật
 Tích **"Chế độ demo"** rồi nhấp lên bản đồ vào bên trong vòng tròn của một địa điểm: ứng dụng tự phát thuyết minh như khi đi thật (vị trí demo **không** được lưu vào thống kê truy cập). Ở chế độ demo không có thời gian chờ: nhấp ra ngoài vòng tròn rồi nhấp lại vào trong là nghe lại ngay.
