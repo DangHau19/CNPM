@@ -91,6 +91,23 @@ var app = builder.Build();
 
 if (trustProxy) app.UseForwardedHeaders();
 
+// Admin chỉ dùng trên máy chạy Docker: chặn /admin và /api/admin khi truy cập đi qua link công khai.
+// Cloudflare Tunnel luôn gắn header CF-Connecting-IP / CF-Ray vào mọi yêu cầu từ Internet (người ngoài không gỡ được),
+// còn truy cập trực tiếp trên máy (http://localhost:8080) thì không có. Tắt bằng Admin__LocalOnly=false.
+if (app.Configuration.GetValue("Admin:LocalOnly", true))
+{
+    app.Use(async (ctx, next) =>
+    {
+        var viaTunnel = ctx.Request.Headers.ContainsKey("CF-Connecting-IP") || ctx.Request.Headers.ContainsKey("CF-Ray");
+        if (viaTunnel && (ctx.Request.Path.StartsWithSegments("/admin") || ctx.Request.Path.StartsWithSegments("/api/admin")))
+        {
+            ctx.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+        await next();
+    });
+}
+
 app.UseExceptionHandler();
 app.UseDefaultFiles();   // / → index.html (du khách), /admin/ → admin/index.html
 app.UseStaticFiles();

@@ -58,6 +58,8 @@ Muốn đổi mật khẩu/khóa: sao chép `.env.example` thành `.env` rồi s
 3. Lấy link: `docker compose logs tunnel` rồi tìm dòng có `https://....trycloudflare.com` (PowerShell: `docker compose logs tunnel | Select-String trycloudflare`). Gửi link đó cho mọi người.
 4. Yêu cầu: máy bạn phải **bật, có mạng, Docker Desktop đang chạy** (tắt chế độ Sleep). Link **đổi mỗi lần chạy lại** tunnel. Dừng: `docker compose --profile tunnel down`.
 
+**Trang Admin chỉ vào được từ máy bạn** (`http://localhost:8080/admin/`): qua link công khai, `/admin` và `/api/admin` trả 404 (bật mặc định, tắt bằng `ADMIN_LOCAL_ONLY=false` trong `.env`). Admin và khách dùng chung một database nên thay đổi ở admin hiện ngay cho khách.
+
 phpMyAdmin (cổng 8081) và MySQL (cổng 3307) chỉ mở trên máy bạn (`127.0.0.1`), **không** đi qua link công khai — đừng đưa chúng ra Internet.
 
 ## Xem và truy vấn database

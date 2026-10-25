@@ -37,6 +37,7 @@ services:
       Seed__AdminUsername: ${ADMIN_USERNAME:-admin}
       Seed__AdminPassword: ${ADMIN_PASSWORD:-Admin@123}
       Storage__UploadPath: /app/data/uploads
+      Admin__LocalOnly: ${ADMIN_LOCAL_ONLY:-true}   # true: trang admin chỉ vào được từ máy chạy Docker, link công khai không vào được
       Hosting__TrustProxy: ${TRUST_PROXY:-true}   # phía trước có Cloudflare Tunnel: lấy IP thật của khách từ X-Forwarded-For
     volumes:
       - uploads:/app/data/uploads
