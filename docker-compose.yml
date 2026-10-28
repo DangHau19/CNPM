@@ -32,6 +32,9 @@ services:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      Ollama__BaseUrl: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      Ollama__Model: ${OLLAMA_MODEL:-translategemma:4b}
+      Ollama__TimeoutSeconds: ${OLLAMA_TIMEOUT_SECONDS:-600}
       ConnectionStrings__Default: "Server=db;Port=3306;Database=hcmc_audioguide;User=root;Password=${MYSQL_ROOT_PASSWORD:-root};CharSet=utf8mb4;"
       Jwt__Key: ${JWT_KEY:-change-me-in-production-at-least-32-characters!!}
       Seed__AdminUsername: ${ADMIN_USERNAME:-admin}

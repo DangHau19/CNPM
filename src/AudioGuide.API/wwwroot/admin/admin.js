@@ -10,9 +10,10 @@
   let tab = 'places';
 
   // ---------- HTTP ----------
-  async function api(path, method = 'GET', body) {
+  async function api(path, method = 'GET', body, signal) {
     const res = await fetch('/api/admin' + path, {
       method,
+      signal,
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body)
     });
@@ -106,9 +107,11 @@
   }
 
   function openPlaceDialog(id) {
+    let placeId = id;
     const p = id ? places.find(x => x.id === id) : { slug: '', latitude: 10.7769, longitude: 106.7009, radiusMeters: 100, address: '', imageUrl: '', isActive: true, translations: [] };
     const dlg = $('#dlg');
-    const activeLangs = languages.filter(l => l.isActive || p.translations.some(t => t.languageCode === l.code));
+    const activeLangs = languages.filter(l => l.code === 'vi' || l.isActive || p.translations.some(t => t.languageCode === l.code));
+    activeLangs.sort((a, b) => (b.code === 'vi') - (a.code === 'vi'));
 
     dlg.innerHTML = `
       <h3>${id ? 'Sửa địa điểm #' + id : 'Thêm địa điểm'}</h3>
@@ -126,24 +129,38 @@
         <label><input type="checkbox" id="fActive" ${p.isActive ? 'checked' : ''} style="width:auto"> Hiển thị cho du khách</label>
         <div class="row"><button class="primary" id="btnSavePlace" type="button">Lưu thông tin địa điểm</button></div>
       </div>
-      ${id ? '<div class="row"><button class="primary btnSaveAll" type="button">💾 Lưu tất cả bản dịch</button></div>' : ''}
+      <div class="row"><button id="btnAutoTranslate" class="primary" type="button">Dịch tất cả ngôn ngữ còn thiếu</button>
+        <button id="btnStopTranslate" type="button" hidden>Dừng dịch</button>
+        <button class="primary btnSaveAll" type="button">💾 Lưu địa điểm và tất cả bản dịch</button></div>
+      <p class="muted">Nhập tên và thuyết minh tiếng Việt rồi nhấn dịch. Các khung đã có nội dung sẽ được giữ nguyên. Kiểm tra tên riêng và nội dung trước khi lưu. Mỗi ngôn ngữ có thể mất vài phút.</p>
+      <p id="translationProgress" role="status" aria-live="polite"></p>
       <div id="transBox">
-        ${id ? activeLangs.map(l => translationBlock(l, p.translations.find(t => t.languageCode === l.code))).join('')
-             : '<p class="muted">Lưu địa điểm trước, sau đó nhập nội dung thuyết minh cho từng ngôn ngữ.</p>'}
+        ${activeLangs.map(l => translationBlock(l, p.translations.find(t => t.languageCode === l.code))).join('')}
       </div>
-      <div class="row">${id ? '<button class="primary btnSaveAll" type="button">💾 Lưu tất cả bản dịch</button>' : ''}<button id="btnCloseDlg" type="button">Đóng</button></div>`;
+      <div class="row"><button class="primary btnSaveAll" type="button">💾 Lưu địa điểm và tất cả bản dịch</button><button id="btnCloseDlg" type="button">Đóng</button></div>`;
 
     $('#btnCloseDlg').onclick = () => dlg.close();
-    $('#btnSavePlace').onclick = guard(async () => {
+    let savingPlace;
+    const savePlace = async () => {
+      if (savingPlace) return savingPlace;
+      savingPlace = persistPlace();
+      try { return await savingPlace; } finally { savingPlace = null; }
+    };
+    const persistPlace = async () => {
       const body = {
         slug: $('#fSlug').value, latitude: parseFloat($('#fLat').value), longitude: parseFloat($('#fLng').value),
         radiusMeters: parseInt($('#fRadius').value, 10), address: $('#fAddress').value,
         imageUrl: $('#fImage').value, isActive: $('#fActive').checked
       };
-      const saved = id ? await api('/places/' + id, 'PUT', body) : await api('/places', 'POST', body);
+      const saved = placeId ? await api('/places/' + placeId, 'PUT', body) : await api('/places', 'POST', body);
+      placeId = saved.id;
+      return placeId;
+    };
+    $('#btnSavePlace').onclick = guard(async () => {
+      await savePlace();
       toast('Đã lưu địa điểm.');
       await renderPlaces();
-      openPlaceDialog(saved.id);   // mở lại để nhập bản dịch
+      // Preserve the draft translations in the current form.
     });
 
     $('#fImageFile').onchange = guard(async e => {
@@ -151,8 +168,58 @@
       if (url) { $('#fImage').value = url; toast('Đã tải ảnh lên. Nhớ bấm "Lưu thông tin địa điểm".'); }
     });
 
-    if (id) { bindTranslationButtons(id, activeLangs); bindSaveAll(id); }
+    bindTranslationButtons(async () => placeId || await savePlace(), activeLangs);
+    bindSaveAll(savePlace);
+    bindAutoTranslate();
     if (!dlg.open) dlg.showModal();
+  }
+
+  function bindAutoTranslate() {
+    $('#btnAutoTranslate').onclick = guard(async () => {
+      const source = $('#transBox fieldset[data-lang="vi"]');
+      const name = source?.querySelector('.tName').value.trim();
+      const narrationText = source?.querySelector('.tText').value.trim();
+      if (!name || !narrationText) throw new Error('Hãy nhập tên và thuyết minh tiếng Việt trước. Cần có ngôn ngữ vi trong phần Ngôn ngữ.');
+      if (name.length > 200 || narrationText.length > 4000) throw new Error('Giới hạn tiếng Việt: tên 200, thuyết minh 4000 ký tự.');
+      const targets = [...document.querySelectorAll('#transBox fieldset')].filter(fs =>
+        fs.dataset.lang !== 'vi' && languages.some(l => l.code === fs.dataset.lang && l.isActive) &&
+        !fs.querySelector('.tName').value.trim() && !fs.querySelector('.tText').value.trim() && !fs.querySelector('.tAudio').value.trim());
+      if (!targets.length) throw new Error('Không còn ngôn ngữ đang kích hoạt có khung bản dịch trống.');
+      const controller = new AbortController();
+      const dlg = $('#dlg'), progress = $('#translationProgress'), stop = $('#btnStopTranslate');
+      const controls = [...dlg.querySelectorAll('button, input, textarea')].map(el => [el, el.disabled]);
+      const preventClose = e => e.preventDefault();
+      dlg.addEventListener('cancel', preventClose);
+      controls.forEach(([el]) => { el.disabled = true; });
+      stop.hidden = false;
+      stop.disabled = false;
+      stop.onclick = () => { controller.abort(); stop.disabled = true; progress.textContent = 'Đang dừng dịch…'; };
+      const failed = [];
+      let completed = 0;
+      try {
+        for (const [index, fs] of targets.entries()) {
+          progress.textContent = `Đang dịch ${index + 1}/${targets.length}: ${fs.dataset.lang}… Đang chờ Ollama, vui lòng giữ trang mở.`;
+          try {
+            const result = await api('/places/auto-translate', 'POST', { name, narrationText, targetLanguage: fs.dataset.lang }, controller.signal);
+            fs.querySelector('.tName').value = result.name;
+            fs.querySelector('.tText').value = result.narrationText;
+            completed++;
+          } catch (e) {
+            if (controller.signal.aborted) break;
+            failed.push(`${fs.dataset.lang}: ${e.message}`);
+            if (!token) break;
+          }
+          if (controller.signal.aborted) break;
+        }
+        progress.textContent = (controller.signal.aborted ? 'Đã dừng. ' : '') +
+          `Đã dịch ${completed}/${targets.length} ngôn ngữ. Chưa lưu: kiểm tra và nhấn Lưu địa điểm và tất cả bản dịch.` +
+          (failed.length ? ` Lỗi: ${failed.join(' · ')}. Nhấn dịch lại để thử các khung còn trống.` : '');
+      } finally {
+        controls.forEach(([el, disabled]) => { el.disabled = disabled; });
+        stop.hidden = true;
+        dlg.removeEventListener('cancel', preventClose);
+      }
+    });
   }
 
   function translationBlock(lang, t) {
@@ -172,11 +239,12 @@
       </fieldset>`;
   }
 
-  function bindTranslationButtons(placeId, langs) {
+  function bindTranslationButtons(ensurePlaceId, langs) {
     document.querySelectorAll('#transBox fieldset').forEach(fs => {
       const code = fs.dataset.lang;
       const lang = langs.find(l => l.code === code);
       fs.querySelector('.tSave').onclick = guard(async () => {
+        const placeId = await ensurePlaceId();
         await api(`/places/${placeId}/translations/${code}`, 'PUT', {
           name: fs.querySelector('.tName').value,
           narrationText: fs.querySelector('.tText').value,
@@ -184,7 +252,7 @@
         });
         toast('Đã lưu bản dịch ' + code + '.');
         await renderPlaces();
-        openPlaceDialog(placeId);
+        // Keep other unsaved drafts in the form.
       });
       fs.querySelector('.tAudioFile').onchange = guard(async e => {
         const url = await upload('audio', e.target.files[0]);
@@ -201,6 +269,7 @@
       const del = fs.querySelector('.tDel');
       if (del) del.onclick = guard(async () => {
         if (!confirm('Xóa bản dịch ' + code + '?')) return;
+        const placeId = await ensurePlaceId();
         await api(`/places/${placeId}/translations/${code}`, 'DELETE');
         toast('Đã xóa bản dịch.');
         await renderPlaces();
@@ -210,8 +279,9 @@
   }
 
   // ---------- Lưu tất cả bản dịch cùng lúc ----------
-  function bindSaveAll(placeId) {
+  function bindSaveAll(savePlace) {
     document.querySelectorAll('.btnSaveAll').forEach(btn => btn.onclick = guard(async () => {
+      const placeId = await savePlace();
       const saved = [], skipped = [];
       for (const fs of document.querySelectorAll('#transBox fieldset')) {
         const name = fs.querySelector('.tName').value.trim();

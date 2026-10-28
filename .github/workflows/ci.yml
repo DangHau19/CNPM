@@ -18,6 +18,10 @@ jobs:
       - run: dotnet restore HcmcAudioGuide.slnx
       - run: dotnet build HcmcAudioGuide.slnx -c Release --no-restore
       - run: dotnet test HcmcAudioGuide.slnx -c Release --no-build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node --test tests/admin-translation.test.cjs
 
   docker-build:
     name: Docker image builds

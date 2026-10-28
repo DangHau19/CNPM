@@ -1,5 +1,7 @@
 # Saigon Audio Guide — Hệ thống thuyết minh tự động đa ngôn ngữ (TP.HCM)
 
+Hướng dẫn mới: [Dịch tất cả ngôn ngữ bằng Ollama](docs/OllamaTranslation.md) — nhập tiếng Việt, dịch tự động rồi kiểm tra và lưu trên form Admin.
+
 Ứng dụng thuyết minh du lịch theo GPS: du khách mở trang web, cho phép định vị, rồi đi tới các địa điểm nổi tiếng ở TP.HCM —
 khi bước vào phạm vi một địa điểm, ứng dụng **tự động đọc và hiển thị thuyết minh** bằng ngôn ngữ của thiết bị (hoặc ngôn ngữ họ chọn).
 Trang **Admin** quản lý địa điểm, nội dung đa ngôn ngữ, thống kê lượt nghe và **xem ai đang truy cập**.
@@ -10,7 +12,7 @@ Dữ liệu mẫu: **6 địa điểm × 5 ngôn ngữ** (vi, en, zh, ja, ko).
 - **Giao diện bản đồ lớn**: bản đồ chiếm toàn màn hình; nội dung thuyết minh và danh sách địa điểm nằm trong bảng bên trái, có thể **thu nhỏ / mở rộng** để không che bản đồ.
 - **Ngôn ngữ mặc định = ngôn ngữ thiết bị** (vi-VN → vi, zh-TW → zh…; chưa hỗ trợ → en) và có ô chọn ngôn ngữ / "Tự động".
 - **Theo dõi truy cập** (admin → tab *Truy cập*): đang online, thiết bị/trình duyệt/HĐH, IP, ngôn ngữ, vị trí gần đúng (làm tròn ~110 m, chỉ khi bật GPS thật), số lượt nghe, khách mới/quay lại, biểu đồ theo ngày.
-- Admin: CRUD địa điểm & bản dịch (nhập tay từng ngôn ngữ, có nút **Lưu tất cả bản dịch**), **tải lên mp3/ảnh**, quản lý ngôn ngữ, thống kê, **đổi mật khẩu**.
+- Admin: CRUD địa điểm & bản dịch, **dịch tất cả ngôn ngữ còn thiếu bằng Ollama** từ bản tiếng Việt ngay khi thêm địa điểm; kiểm tra rồi **Lưu địa điểm và tất cả bản dịch**. Có nút **Dừng dịch**, tải lên mp3/ảnh, quản lý ngôn ngữ, thống kê và đổi mật khẩu.
 - Bảo mật cơ bản: JWT, PBKDF2, giới hạn tần suất (login/ping/play-log).
 
 ## Kiến trúc 3 lớp (.NET 10 + MySQL 8)

@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using AudioGuide.API.Middleware;
 using AudioGuide.API.Security;
 using AudioGuide.API.Storage;
+using AudioGuide.API.Translation;
 using AudioGuide.BLL;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -20,6 +21,16 @@ if (jwt.Key.Length < 32) throw new InvalidOperationException("Jwt:Key phải dà
 
 // ---- Business + Data layers (MySQL 8) ----
 builder.Services.AddBusinessLogic(connectionString, builder.Configuration["Database:ServerVersion"]);
+builder.Services.AddOptions<OllamaOptions>().Bind(builder.Configuration.GetSection("Ollama"))
+    .Validate(o => Uri.TryCreate(o.BaseUrl, UriKind.Absolute, out var uri) &&
+        uri.Scheme is "http" or "https" && !string.IsNullOrWhiteSpace(o.Model) &&
+        o.TimeoutSeconds is >= 30 and <= 3600, "Cấu hình Ollama không hợp lệ.").ValidateOnStart();
+builder.Services.AddHttpClient<OllamaTranslationService>((sp, client) =>
+{
+    var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<OllamaOptions>>().Value;
+    client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
+    client.Timeout = Timeout.InfiniteTimeSpan;
+});
 
 // ---- Thư mục upload ----
 var configuredUploadPath = builder.Configuration["Storage:UploadPath"];
@@ -64,6 +75,7 @@ builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     o.AddPolicy("login", ctx => Window(ctx, 10, TimeSpan.FromMinutes(1)));
+    o.AddPolicy("translation", ctx => Window(ctx, 120, TimeSpan.FromMinutes(1)));
     o.AddPolicy("ping", ctx => Window(ctx, 240, TimeSpan.FromMinutes(1)));
     o.AddPolicy("play", ctx => Window(ctx, 120, TimeSpan.FromMinutes(1)));
 });

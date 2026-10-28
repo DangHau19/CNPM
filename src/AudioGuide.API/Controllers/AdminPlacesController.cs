@@ -2,6 +2,8 @@ using AudioGuide.BLL;
 using AudioGuide.BLL.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using AudioGuide.API.Translation;
 
 namespace AudioGuide.API.Controllers;
 
@@ -15,6 +17,12 @@ public class AdminPlacesController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<List<PlaceAdminDto>>> List() => await _service.ListAsync();
+
+    [HttpPost("auto-translate")]
+    [EnableRateLimiting("translation")]
+    public async Task<ActionResult<TranslationDto>> AutoTranslate([FromBody] AutoTranslationRequest request,
+        [FromServices] OllamaTranslationService translator, CancellationToken ct) =>
+        await translator.TranslateAsync(request, ct);
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<PlaceAdminDto>> Get(int id) => await _service.GetAsync(id);
