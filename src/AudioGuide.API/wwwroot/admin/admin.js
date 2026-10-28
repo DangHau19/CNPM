@@ -83,9 +83,9 @@
       <div class="bar"><h2>Địa điểm (${places.length})</h2><button class="primary" id="btnAddPlace" type="button">+ Thêm địa điểm</button></div>
       <table>
         <thead><tr><th>#</th><th>Tên</th><th>Tọa độ</th><th>Bán kính</th><th>Bản dịch</th><th>Trạng thái</th><th></th></tr></thead>
-        <tbody>${places.map(p => `
+        <tbody>${places.map((p, i) => `
           <tr>
-            <td>${p.id}</td>
+            <td>${i + 1}</td>
             <td><strong>${esc(viName(p))}</strong><br><span class="muted">${esc(p.slug)}</span></td>
             <td>${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}</td>
             <td>${p.radiusMeters} m</td>

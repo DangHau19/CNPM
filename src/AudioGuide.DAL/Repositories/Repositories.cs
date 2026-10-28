@@ -86,6 +86,14 @@ public class PlaceRepository : IPlaceRepository
     {
         _db.Places.Remove(place);
         await _db.SaveChangesAsync();
+
+        // MySQL không tái sử dụng số thứ tự đã xóa (xóa số 10 rồi thêm mới sẽ ra 11).
+        // Đặt lại bộ đếm về "số lớn nhất hiện có + 1" để địa điểm mới nhận đúng số kế tiếp.
+        if (_db.Database.IsRelational())
+        {
+            var next = (await _db.Places.MaxAsync(x => (int?)x.Id) ?? 0) + 1;
+            await _db.Database.ExecuteSqlRawAsync("ALTER TABLE `Places` AUTO_INCREMENT = " + next);
+        }
     }
 
     public async Task DeleteTranslationAsync(PlaceTranslation translation)
