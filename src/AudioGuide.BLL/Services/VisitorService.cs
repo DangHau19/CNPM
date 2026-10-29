@@ -19,8 +19,8 @@ public interface IVisitorService
 
 public class VisitorService : IVisitorService
 {
-    /// <summary>Trình duyệt ping mỗi 30 giây; quá 90 giây không ping = đã rời đi.</summary>
-    public static readonly TimeSpan OnlineWindow = TimeSpan.FromSeconds(90);
+    /// <summary>Trình duyệt ping mỗi 10 giây; quá 30 giây không ping = đã rời đi.</summary>
+    public static readonly TimeSpan OnlineWindow = TimeSpan.FromSeconds(30);
 
     private static readonly Regex IdRegex = new("^[A-Za-z0-9-]{8,64}$", RegexOptions.Compiled);
     private static readonly Regex LocaleRegex = new("^[A-Za-z0-9_-]{1,35}$", RegexOptions.Compiled);

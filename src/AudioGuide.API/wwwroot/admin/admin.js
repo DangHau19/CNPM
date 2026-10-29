@@ -377,7 +377,7 @@
         <div class="card"><div class="muted">Tổng thiết bị từ trước đến nay</div><h2>${o.totalVisitors}</h2></div>
       </div>
 
-      <div class="card"><h3>Đang online (${online.length}) <span class="muted" style="font-size:.8rem">· tự làm mới mỗi 15 giây</span></h3>
+      <div class="card"><h3>Đang online (${online.length}) <span class="muted" style="font-size:.8rem">· tự làm mới mỗi 5 giây</span></h3>
         <div class="scroll"><table id="onlineTable">${visitHead}<tbody>${visitRows(online)}</tbody></table></div></div>
 
       <div class="grid">
@@ -402,7 +402,7 @@
     $('#visPrev').onclick = guard(async () => { await renderVisitors(days, page - 1); });
     $('#visNext').onclick = guard(async () => { await renderVisitors(days, page + 1); });
 
-    // Làm mới danh sách "đang online" mỗi 15 giây (không vẽ lại cả trang để không mất vị trí cuộn).
+    // Làm mới danh sách "đang online" mỗi 5 giây (không vẽ lại cả trang để không mất vị trí cuộn).
     stopVisitorTimer();
     visitorTimer = setInterval(async () => {
       try {
@@ -413,7 +413,7 @@
         const first = document.querySelector('.grid .card h2');
         if (first) first.innerHTML = `<span class="dot"></span>${ov.onlineNow}`;
       } catch { /* bỏ qua lỗi tạm thời */ }
-    }, 15000);
+    }, 5000);
   }
 
   // ---------- Ngôn ngữ ----------

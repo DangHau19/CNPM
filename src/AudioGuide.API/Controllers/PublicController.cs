@@ -51,7 +51,7 @@ public class PublicController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>Trình duyệt gọi khi mở trang và định kỳ ~30 giây để báo "tôi đang online".</summary>
+    /// <summary>Trình duyệt gọi khi mở trang và định kỳ ~10 giây để báo "tôi đang online".</summary>
     [HttpPost("visits/ping")]
     [EnableRateLimiting("ping")]
     public async Task<IActionResult> Ping([FromBody] PingRequest request)

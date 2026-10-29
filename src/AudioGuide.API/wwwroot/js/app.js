@@ -5,7 +5,7 @@
   const COOLDOWN_MS = 45 * 1000;        // sau khi đọc xong, phải chờ 45 giây (kể cả đã ra rồi vào lại vòng tròn) mới tự phát lại địa điểm đó
   const EXIT_MARGIN_M = 25;             // phải đi ra khỏi bán kính + 25 m thì lần sau vào lại mới phát tiếp (chống nhấp nháy GPS)
   const MAX_ACCURACY_M = 200;           // sai số GPS lớn hơn mức này thì chưa dùng để tự kích hoạt
-  const PING_MS = 30 * 1000;            // báo "đang online" cho máy chủ mỗi 30 giây
+  const PING_MS = 10 * 1000;            // báo "đang online" cho máy chủ mỗi 10 giây
 
   // Chuỗi giao diện theo ngôn ngữ (ngôn ngữ chưa có sẽ dùng tiếng Anh)
   const UI = {

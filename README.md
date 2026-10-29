@@ -80,7 +80,7 @@ Trình duyệt chỉ cho phát tiếng sau khi người dùng chạm vào trang 
 | GET | `/api/public/places?lang=&lat=&lng=` | Địa điểm theo ngôn ngữ (có fallback). Bỏ `lang` → theo `Accept-Language` |
 | GET | `/api/public/places/nearby?lat=&lng=&lang=` | Địa điểm gần nhất trong bán kính (204 nếu không có) |
 | POST | `/api/public/play-log` | Ghi lượt nghe (kèm `clientId` để biết ai nghe) |
-| POST | `/api/public/visits/ping` | Báo "đang online" (mỗi 30 giây) |
+| POST | `/api/public/visits/ping` | Báo "đang online" (mỗi 10 giây) |
 | POST | `/api/admin/auth/login` | Đăng nhập, trả JWT (giới hạn 10 lần/phút/IP) |
 | PUT | `/api/admin/auth/password` | Đổi mật khẩu 🔒 |
 | GET/POST/PUT/DELETE | `/api/admin/places[/{id}]` | CRUD địa điểm 🔒 |

@@ -47,7 +47,7 @@ flowchart LR
 | BR8 | Mật khẩu admin được băm PBKDF2-SHA256, không lưu dạng rõ; mật khẩu mới tối thiểu 8 ký tự. |
 | BR9 | Ngôn ngữ mặc định là ngôn ngữ của thiết bị (`navigator.languages`/`Accept-Language`); nếu chưa được hỗ trợ thì dùng tiếng Anh. Du khách có thể chọn ngôn ngữ khác hoặc quay về "Tự động". |
 | BR10 | Trình duyệt chỉ cho phát âm thanh sau lần chạm đầu tiên; nếu thuyết minh kích hoạt trước đó, hệ thống vẫn hiển thị chữ ngay và phát tiếng khi người dùng chạm lần đầu. |
-| BR11 | Mỗi thiết bị có một `ClientId` ẩn danh (UUID tự sinh); mỗi tab là một phiên (`SessionKey`). Phiên được coi là "đang online" nếu có tín hiệu trong 90 giây gần nhất (ping mỗi 30 giây). |
+| BR11 | Mỗi thiết bị có một `ClientId` ẩn danh (UUID tự sinh); mỗi tab là một phiên (`SessionKey`). Phiên được coi là "đang online" nếu có tín hiệu trong 30 giây gần nhất (ping mỗi 10 giây). |
 | BR12 | Vị trí của du khách chỉ được lưu khi họ bật GPS thật (không lưu ở chế độ demo) và được làm tròn ~110 m. Giao diện có thông báo về việc ghi nhận ẩn danh. |
 | BR13 | Các API công khai (ping, play-log) và đăng nhập admin bị giới hạn tần suất theo IP để chống spam / dò mật khẩu. |
 
@@ -206,7 +206,7 @@ flowchart LR
 |---|---|
 | 1. Perform {UC5 Đăng nhập quản trị}. | |
 | 2. Admin mở tab "Truy cập". A1 | 3. Hệ thống hiển thị số người đang online, số lượt truy cập, số thiết bị khác nhau, khách mới/quay lại, biểu đồ theo ngày, phân bố thiết bị/ngôn ngữ. |
-| | 4. Hệ thống hiển thị danh sách "Đang online" (tự làm mới 15 giây) và lịch sử truy cập phân trang. Use case kết thúc. |
+| | 4. Hệ thống hiển thị danh sách "Đang online" (tự làm mới 5 giây) và lịch sử truy cập phân trang. Use case kết thúc. |
 
 **Alternative Paths:** A1. Admin đổi khoảng thời gian (24 giờ/7/30/90 ngày) hoặc chuyển trang lịch sử.
 **Exception Paths:** E1. Token hết hạn → về trang đăng nhập. **Preconditions:** Đã đăng nhập. **Business Rules:** BR4, BR11, BR12.
@@ -236,7 +236,7 @@ flowchart LR
 |---|---|
 | 1. Du khách mở ứng dụng. | 2. Trình duyệt tạo (hoặc đọc lại) `ClientId` và `SessionKey`, gửi ping (ngôn ngữ thiết bị, ngôn ngữ đang dùng, vị trí gần đúng nếu bật GPS thật). |
 | | 3. Hệ thống tạo/cập nhật `Visitor` và `VisitSession`, phân tích User-Agent (loại thiết bị, trình duyệt, hệ điều hành), lấy IP (qua X-Forwarded-For nếu sau proxy tin cậy). |
-| 4. Trình duyệt ping lại mỗi 30 giây khi trang đang hiển thị. | 5. Hệ thống làm mới `LastSeenAt`. Use case kết thúc. |
+| 4. Trình duyệt ping lại mỗi 10 giây khi trang đang hiển thị. | 5. Hệ thống làm mới `LastSeenAt`. Use case kết thúc. |
 
 **Exception Paths:** E1. Ping lỗi hoặc bị giới hạn tần suất (429) → bỏ qua, không ảnh hưởng trải nghiệm. **Business Rules:** BR11, BR12, BR13.
 

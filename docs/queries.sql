@@ -8,20 +8,20 @@
 --   Places / PlaceTranslations / Languages   địa điểm, nội dung đa ngôn ngữ, danh sách ngôn ngữ
 --   AdminUsers        tài khoản quản trị
 
--- 1) AI ĐANG TRUY CẬP (có tín hiệu trong 90 giây gần nhất; trình duyệt gửi tín hiệu mỗi 30 giây)
+-- 1) AI ĐANG TRUY CẬP (có tín hiệu trong 30 giây gần nhất; trình duyệt gửi tín hiệu mỗi 10 giây)
 SELECT v.ClientId, s.IpAddress, s.DeviceType, s.Browser, s.Os, s.LanguageCode,
        s.Latitude, s.Longitude,
        DATE_ADD(s.StartedAt, INTERVAL 7 HOUR)  AS BatDauGioVN,
        DATE_ADD(s.LastSeenAt, INTERVAL 7 HOUR) AS ThayLanCuoiGioVN
 FROM VisitSessions s
 JOIN Visitors v ON v.Id = s.VisitorId
-WHERE s.LastSeenAt >= UTC_TIMESTAMP() - INTERVAL 90 SECOND
+WHERE s.LastSeenAt >= UTC_TIMESTAMP() - INTERVAL 30 SECOND
 ORDER BY s.LastSeenAt DESC;
 
 -- 2) Số người đang online
 SELECT COUNT(*) AS DangOnline
 FROM VisitSessions
-WHERE LastSeenAt >= UTC_TIMESTAMP() - INTERVAL 90 SECOND;
+WHERE LastSeenAt >= UTC_TIMESTAMP() - INTERVAL 30 SECOND;
 
 -- 3) Tổng quan: số thiết bị, số lượt truy cập, số lượt nghe
 SELECT (SELECT COUNT(*) FROM Visitors)      AS TongThietBi,
