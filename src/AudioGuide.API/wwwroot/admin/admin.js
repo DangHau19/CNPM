@@ -117,14 +117,14 @@
       <h3>${id ? 'Sửa địa điểm #' + id : 'Thêm địa điểm'}</h3>
       <div class="card">
         <div class="grid">
-          <div><label>Slug</label><input id="fSlug" value="${esc(p.slug)}" placeholder="dinh-doc-lap"></div>
-          <div><label>Vĩ độ</label><input id="fLat" type="number" step="0.00001" value="${p.latitude}"></div>
-          <div><label>Kinh độ</label><input id="fLng" type="number" step="0.00001" value="${p.longitude}"></div>
-          <div><label>Bán kính (m)</label><input id="fRadius" type="number" value="${p.radiusMeters}"></div>
+          <div><label>Slug</label><input id="fSlug" maxlength="100" value="${esc(p.slug)}" placeholder="dinh-doc-lap"></div>
+          <div><label>Vĩ độ</label><input id="fLat" type="number" min="-90" max="90" step="0.00001" required value="${p.latitude}"></div>
+          <div><label>Kinh độ</label><input id="fLng" type="number" min="-180" max="180" step="0.00001" required value="${p.longitude}"></div>
+          <div><label>Bán kính (m)</label><input id="fRadius" type="number" min="20" max="2000" step="1" required value="${p.radiusMeters}"></div>
         </div>
-        <label>Địa chỉ</label><input id="fAddress" value="${esc(p.address)}">
+        <label>Địa chỉ</label><input id="fAddress" maxlength="300" required value="${esc(p.address)}">
         <label>Ảnh (URL hoặc tải lên, tùy chọn)</label>
-        <div class="inline"><input id="fImage" value="${esc(p.imageUrl || '')}">
+        <div class="inline"><input id="fImage" maxlength="500" value="${esc(p.imageUrl || '')}">
           <input id="fImageFile" type="file" accept="image/png,image/jpeg,image/webp" style="max-width:220px"></div>
         <label><input type="checkbox" id="fActive" ${p.isActive ? 'checked' : ''} style="width:auto"> Hiển thị cho du khách</label>
         <div class="row"><button class="primary" id="btnSavePlace" type="button">Lưu thông tin địa điểm</button></div>
@@ -146,7 +146,22 @@
       savingPlace = persistPlace();
       try { return await savingPlace; } finally { savingPlace = null; }
     };
+    // Kiểm tra giống phía máy chủ và cơ sở dữ liệu (cùng một bộ điều kiện)
+    const validatePlaceForm = () => {
+      const slug = $('#fSlug').value.trim();
+      const lat = parseFloat($('#fLat').value), lng = parseFloat($('#fLng').value);
+      const radius = Number($('#fRadius').value);
+      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length > 100) throw new Error('Slug chỉ gồm chữ thường, số và dấu gạch ngang (vd: dinh-doc-lap).');
+      if (!Number.isFinite(lat) || lat < -90 || lat > 90) throw new Error('Vĩ độ phải trong khoảng -90 đến 90.');
+      if (!Number.isFinite(lng) || lng < -180 || lng > 180) throw new Error('Kinh độ phải trong khoảng -180 đến 180.');
+      if (!Number.isInteger(radius) || radius < 20 || radius > 2000) throw new Error('Bán kính kích hoạt phải là số nguyên từ 20 đến 2000 mét.');
+      const addr = $('#fAddress').value.trim();
+      if (!addr || addr.length > 300) throw new Error('Địa chỉ bắt buộc (tối đa 300 ký tự).');
+      const img = $('#fImage').value.trim();
+      if (img.length > 500) throw new Error('Đường dẫn ảnh tối đa 500 ký tự.');
+    };
     const persistPlace = async () => {
+      validatePlaceForm();
       const body = {
         slug: $('#fSlug').value, latitude: parseFloat($('#fLat').value), longitude: parseFloat($('#fLng').value),
         radiusMeters: parseInt($('#fRadius').value, 10), address: $('#fAddress').value,
@@ -226,10 +241,10 @@
     return `
       <fieldset data-lang="${esc(lang.code)}">
         <legend>${esc(lang.nativeName)} (${esc(lang.code)})</legend>
-        <label>Tên địa điểm</label><input class="tName" value="${esc(t?.name || '')}">
-        <label>Nội dung thuyết minh</label><textarea class="tText">${esc(t?.narrationText || '')}</textarea>
+        <label>Tên địa điểm</label><input class="tName" maxlength="200" value="${esc(t?.name || '')}">
+        <label>Nội dung thuyết minh</label><textarea class="tText" maxlength="4000">${esc(t?.narrationText || '')}</textarea>
         <label>File âm thanh (URL hoặc tải lên .mp3/.m4a/.wav/.ogg, tùy chọn – bỏ trống để dùng giọng đọc tự động)</label>
-        <div class="inline"><input class="tAudio" value="${esc(t?.audioUrl || '')}">
+        <div class="inline"><input class="tAudio" maxlength="500" value="${esc(t?.audioUrl || '')}">
           <input class="tAudioFile" type="file" accept="audio/*" style="max-width:220px"></div>
         <div class="row">
           <button class="primary tSave" type="button">Lưu bản dịch</button>
@@ -239,11 +254,29 @@
       </fieldset>`;
   }
 
+  // Kiểm tra bản dịch: khớp với BE và ràng buộc CHECK trong database.
+  function validateTranslation(name, text, audio) {
+    name = (name || '').trim(); text = (text || '').trim(); audio = (audio || '').trim();
+    if (!name || name.length > 200) throw new Error('Tên địa điểm (bản dịch) phải từ 1 đến 200 ký tự.');
+    if (!text || text.length > 4000) throw new Error('Nội dung thuyết minh phải từ 1 đến 4000 ký tự.');
+    if (audio && (audio.length > 500 || !/^(https?:\/\/|\/)/i.test(audio)))
+      throw new Error('Đường dẫn âm thanh phải bắt đầu bằng http://, https:// hoặc / (tối đa 500 ký tự).');
+  }
+
+  // Kiểm tra ngôn ngữ: khớp với BE và ràng buộc CHECK trong database.
+  function validateLanguage(code, name, native, locale) {
+    if (!/^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(code)) throw new Error('Mã ngôn ngữ không hợp lệ (vd: fr, vi, zh-Hans).');
+    if (!name.trim() || name.length > 100) throw new Error('Tên ngôn ngữ phải từ 1 đến 100 ký tự.');
+    if (!native.trim() || native.length > 100) throw new Error('Tên bản ngữ phải từ 1 đến 100 ký tự.');
+    if (!locale.trim() || locale.length > 20) throw new Error('Locale giọng đọc phải từ 1 đến 20 ký tự.');
+  }
+
   function bindTranslationButtons(ensurePlaceId, langs) {
     document.querySelectorAll('#transBox fieldset').forEach(fs => {
       const code = fs.dataset.lang;
       const lang = langs.find(l => l.code === code);
       fs.querySelector('.tSave').onclick = guard(async () => {
+        validateTranslation(fs.querySelector('.tName').value, fs.querySelector('.tText').value, fs.querySelector('.tAudio').value);
         const placeId = await ensurePlaceId();
         await api(`/places/${placeId}/translations/${code}`, 'PUT', {
           name: fs.querySelector('.tName').value,
@@ -288,6 +321,7 @@
         const text = fs.querySelector('.tText').value.trim();
         if (!name && !text) continue;                       // ngôn ngữ chưa nhập: bỏ qua
         if (!name || !text) { skipped.push(fs.dataset.lang); continue; }
+        validateTranslation(name, text, fs.querySelector('.tAudio').value);
         await api(`/places/${placeId}/translations/${fs.dataset.lang}`, 'PUT',
           { name, narrationText: text, audioUrl: fs.querySelector('.tAudio').value });
         saved.push(fs.dataset.lang);
@@ -425,9 +459,9 @@
         <tbody>${languages.map(l => `
           <tr data-code="${esc(l.code)}">
             <td><strong>${esc(l.code)}</strong></td>
-            <td><input class="lName" value="${esc(l.name)}"></td>
-            <td><input class="lNative" value="${esc(l.nativeName)}"></td>
-            <td><input class="lLocale" value="${esc(l.speechLocale)}"></td>
+            <td><input class="lName" maxlength="100" value="${esc(l.name)}"></td>
+            <td><input class="lNative" maxlength="100" value="${esc(l.nativeName)}"></td>
+            <td><input class="lLocale" maxlength="20" value="${esc(l.speechLocale)}"></td>
             <td><input class="lOrder" type="number" value="${l.sortOrder}" style="width:70px"></td>
             <td><input class="lActive" type="checkbox" ${l.isActive ? 'checked' : ''} style="width:auto"></td>
             <td><button class="lSave primary" type="button">Lưu</button></td>
@@ -437,16 +471,17 @@
       <div class="card" style="margin-top:16px">
         <h3>Thêm ngôn ngữ</h3>
         <div class="grid">
-          <div><label>Mã (vd: fr)</label><input id="nCode"></div>
-          <div><label>Tên (English)</label><input id="nName"></div>
-          <div><label>Tên bản ngữ</label><input id="nNative"></div>
-          <div><label>Locale giọng đọc (vd: fr-FR)</label><input id="nLocale"></div>
+          <div><label>Mã (vd: fr)</label><input id="nCode" maxlength="10"></div>
+          <div><label>Tên (English)</label><input id="nName" maxlength="100"></div>
+          <div><label>Tên bản ngữ</label><input id="nNative" maxlength="100"></div>
+          <div><label>Locale giọng đọc (vd: fr-FR)</label><input id="nLocale" maxlength="20"></div>
         </div>
         <div class="row"><button class="primary" id="btnAddLang" type="button">+ Thêm</button></div>
       </div>`;
 
     document.querySelectorAll('tr[data-code]').forEach(tr => {
       tr.querySelector('.lSave').onclick = guard(async () => {
+        validateLanguage(tr.dataset.code, tr.querySelector('.lName').value, tr.querySelector('.lNative').value, tr.querySelector('.lLocale').value);
         await api('/languages/' + tr.dataset.code, 'PUT', {
           code: tr.dataset.code, name: tr.querySelector('.lName').value, nativeName: tr.querySelector('.lNative').value,
           speechLocale: tr.querySelector('.lLocale').value, isActive: tr.querySelector('.lActive').checked,
@@ -458,6 +493,7 @@
     });
 
     $('#btnAddLang').onclick = guard(async () => {
+      validateLanguage($('#nCode').value.trim(), $('#nName').value, $('#nNative').value, $('#nLocale').value);
       await api('/languages', 'POST', {
         code: $('#nCode').value, name: $('#nName').value, nativeName: $('#nNative').value,
         speechLocale: $('#nLocale').value, isActive: true, sortOrder: languages.length + 1

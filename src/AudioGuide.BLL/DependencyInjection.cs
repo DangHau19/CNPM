@@ -34,6 +34,7 @@ public static class DependencyInjection
                 using var scope = provider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 await db.Database.EnsureCreatedAsync();   // database trống: tạo toàn bộ bảng
+                await DbConstraints.EnsureAsync(db);      // database cũ: bổ sung ràng buộc CHECK còn thiếu
                 await DbSeeder.SeedAsync(db, adminUsername, PasswordHasher.Hash(adminPassword));
                 return;
             }

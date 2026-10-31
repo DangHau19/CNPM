@@ -64,6 +64,14 @@ Muốn đổi mật khẩu/khóa: sao chép `.env.example` thành `.env` rồi s
 
 phpMyAdmin (cổng 8081) và MySQL (cổng 3307) chỉ mở trên máy bạn (`127.0.0.1`), **không** đi qua link công khai — đừng đưa chúng ra Internet.
 
+## Ràng buộc dữ liệu (FE → BE → Database)
+
+Mọi điều kiện nhập liệu được kiểm tra ở **3 tầng** để sửa trực tiếp trong phpMyAdmin cũng không thể nhập dữ liệu sai:
+trình duyệt (`admin.js`), service (BLL) và **CHECK constraint của MySQL** (khai báo trong `src/AudioGuide.DAL/DbConstraints.cs`).
+Ví dụ: bán kính 20–2000 m, vĩ độ −90..90, kinh độ −180..180, slug `a-b-c`, mã ngôn ngữ `vi`/`zh-Hans`, đường dẫn âm thanh bắt đầu bằng `http://`, `https://` hoặc `/`, nội dung không rỗng…
+Vi phạm sẽ báo lỗi MySQL 3819 (*Check constraint … is violated*). Database cũ được bổ sung ràng buộc tự động khi khởi động API
+(nếu dữ liệu cũ đang vi phạm thì ràng buộc đó bị bỏ qua và ghi vào `docker compose logs api`).
+
 ## Xem và truy vấn database
 Mở http://localhost:8081/ (`root` + mật khẩu trong `.env`, mặc định `root`) → database `hcmc_audioguide`. Tab **SQL** để chạy câu lệnh; các câu mẫu (đang online, lượt truy cập theo ngày, thiết bị, ngôn ngữ, địa điểm được nghe nhiều, thêm địa điểm bằng SQL…) nằm trong [`docs/queries.sql`](docs/queries.sql). Dữ liệu người dùng vào bằng link công khai hiện ngay trong các bảng này.
 

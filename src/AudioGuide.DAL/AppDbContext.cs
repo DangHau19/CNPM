@@ -17,6 +17,23 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder b)
     {
+        // Ràng buộc CHECK của MySQL (xem DbConstraints) cho database tạo mới
+        foreach (var table in DbConstraints.All.GroupBy(c => c.Table))
+        {
+            var entityType = table.Key switch
+            {
+                "Places" => typeof(Place),
+                "PlaceTranslations" => typeof(PlaceTranslation),
+                "Languages" => typeof(Language),
+                "AdminUsers" => typeof(AdminUser),
+                "PlayLogs" => typeof(PlayLog),
+                "Visitors" => typeof(Visitor),
+                "VisitSessions" => typeof(VisitSession),
+                _ => throw new InvalidOperationException("Bảng không xác định: " + table.Key)
+            };
+            b.Entity(entityType).ToTable(t => { foreach (var c in table) t.HasCheckConstraint(c.Name, c.Sql); });
+        }
+
         b.Entity<Language>(e =>
         {
             e.HasKey(x => x.Code);
